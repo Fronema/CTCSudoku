@@ -327,11 +327,19 @@ const STATE={
 };
 
 function parseDate(str){
-  if(!str) return null;
-  const [day,mon,year]=str.split("-");
-  return new Date(year, months[mon], day);
-}
+  if(!str || !str.includes("-")) return null;
 
+  const parts = str.trim().split("-");
+  if(parts.length !== 3) return null;
+
+  const day = Number(parts[0]);
+  const mon = months[parts[1]];
+  const year = Number(parts[2]);
+
+  if(isNaN(day) || isNaN(year) || mon === undefined) return null;
+
+  return new Date(year, mon, day);
+}
 function toSeconds(str){
   if(!str) return 0;
   const p=str.split(":").map(Number);
@@ -363,31 +371,34 @@ async function loadData(){
 }
 
 function initDefaults(){
-  const lengths=STATE.data.map(d=>d.lengthSec/60);
-  document.getElementById("minLength").value=Math.floor(Math.min(...lengths));
-  document.getElementById("maxLength").value=Math.ceil(Math.max(...lengths));
 
-  const dates=STATE.data.map(d=>d.dateObj.getTime());
-  const min=new Date(Math.min(...dates));
-  const today=new Date();
+  const validDates = STATE.data
+    .map(d => d.dateObj)
+    .filter(d => d instanceof Date && !isNaN(d));
 
-  document.getElementById("minDate").value=min.toISOString().split("T")[0];
-  document.getElementById("maxDate").value=today.toISOString().split("T")[0];
+  if(validDates.length === 0) return;
+
+  const minDate = new Date(Math.min(...validDates.map(d=>d.getTime())));
+  const today = new Date();
+
+  document.getElementById("minDate").value =
+    minDate.toISOString().split("T")[0];
+
+  document.getElementById("maxDate").value =
+    today.toISOString().split("T")[0];
+
+  const validLengths = STATE.data
+    .map(d => d.lengthSec)
+    .filter(n => !isNaN(n) && n > 0);
+
+  if(validLengths.length){
+    document.getElementById("minLength").value =
+      Math.floor(Math.min(...validLengths)/60);
+
+    document.getElementById("maxLength").value =
+      Math.ceil(Math.max(...validLengths)/60);
+  }
 }
-
-function applyFilters(){
-  const search=document.getElementById("search").value.toLowerCase();
-  const minLen=+document.getElementById("minLength").value*60;
-  const maxLen=+document.getElementById("maxLength").value*60;
-  const minDate=new Date(document.getElementById("minDate").value);
-  const maxDate=new Date(document.getElementById("maxDate").value);
-
-  STATE.filtered = STATE.data.filter(d=>{
-    if(!d.title.toLowerCase().includes(search)) return false;
-    if(d.lengthSec<minLen || d.lengthSec>maxLen) return false;
-    if(d.dateObj<minDate || d.dateObj>maxDate) return false;
-    return true;
-  });
 
   renderConstraints();
   renderTable();
@@ -482,4 +493,5 @@ loadData();
 
 </body>
 </html>
+
 
