@@ -98,6 +98,7 @@ tr:hover {
   color: var(--muted);
 }
 </style>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 </head>
 
 <body>
@@ -197,18 +198,13 @@ function saveSolvedMap(map) {
 async function loadData() {
   const res = await fetch(CSV_URL);
   const text = await res.text();
-  const rows = text.split("\n").map(r => r.split(","));
 
-  const headers = rows[0];
-  const videoTypeIndex = headers.indexOf("Video Type");
+  const parsed = Papa.parse(text, {
+    header: true,
+    skipEmptyLines: true
+  });
 
-  DATA = rows.slice(1)
-    .map(row => {
-      const obj = {};
-      headers.forEach((h,i)=> obj[h]=row[i]);
-      return obj;
-    })
-    .filter(r => r["Video Type"] === "Sudoku");
+  DATA = parsed.data.filter(r => r["Video Type"] === "Sudoku");
 
   generateDynamicFilters();
   render();
@@ -353,4 +349,5 @@ loadData();
 
 </script>
 </body>
+
 </html>
