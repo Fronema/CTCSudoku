@@ -1,7 +1,10 @@
-// CTC Finder - stable build
-
 const CSV_URL =
   "https://docs.google.com/spreadsheets/d/1rVqAjm-l_Urjd3TNmIc3SmTmz_OlgSoBuhY7RPgiuRg/export?format=csv&gid=725349095";
+
+const months = {
+  Jan:0, Feb:1, Mar:2, Apr:3, May:4, Jun:5,
+  Jul:6, Aug:7, Sep:8, Oct:9, Nov:10, Dec:11
+};
 
 const state = {
   data: [],
@@ -11,118 +14,101 @@ const state = {
   rowsPerPage: 50
 };
 
-/* ---------------- Utilities ---------------- */
-
 function parseDate(str){
   if(!str) return null;
 
-  const cleaned = str.trim();
-  const normalized = cleaned.replace(/-/g, " ");
-  const date = new Date(normalized);
+  const parts = str.trim().split("-");
+  if(parts.length !== 3) return null;
 
-  if (isNaN(date.getTime())) return null;
-  return date;
+  const day = Number(parts[0]);
+  const month = months[parts[1]];
+  const year = Number(parts[2]);
+
+  if(isNaN(day) || isNaN(year) || month === undefined)
+    return null;
+
+  return new Date(year, month, day);
 }
 
 function toSeconds(str){
   if(!str) return 0;
-  const parts = str.split(":").map(Number);
-  if(parts.length !== 3) return 0;
-  return parts[0]*3600 + parts[1]*60 + parts[2];
+  const p = str.split(":").map(Number);
+  if(p.length !== 3) return 0;
+  return p[0]*3600 + p[1]*60 + p[2];
 }
 
-/* ---------------- Data Loading ---------------- */
-
 async function loadData(){
+
   const res = await fetch(CSV_URL);
   const text = await res.text();
-  const parsed = Papa.parse(text, { header:true, skipEmptyLines:true });
+  const parsed = Papa.parse(text, {
+    header: true,
+    skipEmptyLines: true
+  });
 
-  console.log("Rows loaded:", parsed.data.length);
-  console.log("First row sample:", parsed.data[0]);
-
-  // Robust Sudoku detection (no fragile column name dependency)
-  const sudokuRows = parsed.data.filter(row =>
-    Object.values(row).join(" ").includes("Sudoku")
-  );
-
-  console.log("Sudoku rows detected:", sudokuRows.length);
-
-  state.data = sudokuRows.map(row => {
-    const parsedDate = parseDate(row.Date);
-
-    return {
-      title: row["Video Title"],
-      dateStr: row.Date,
-      dateObj: parsedDate,
-      lengthStr: row.Length,
-      lengthSec: toSeconds(row.Length),
-      constraints: (row["Puzzle Sub-Type / Constraints"] || "")
+  state.data = parsed.data
+    .filter(r => r["Video Type"] === "Sudoku")
+    .map(r => ({
+      title: r["Video Title"],
+      dateStr: r["Date"],
+      dateObj: parseDate(r["Date"]),
+      lengthStr: r["Length"],
+      lengthSec: toSeconds(r["Length"]),
+      constraints: (r["Puzzle Sub-Type / Constraints"] || "")
         .split(";")
         .map(s => s.trim())
         .filter(Boolean),
-      host: row["Host/Solver"] || "",
-      setter: row.Setter || "",
-      link: row["Link YT"]
-    };
-  }).filter(d => d.dateObj !== null);
-
-  console.log("Valid parsed entries:", state.data.length);
-
-  if(state.data.length === 0){
-    console.warn("No valid Sudoku data parsed.");
-    return;
-  }
+      host: r["Host/Solver"] || "",
+      setter: r["Setter"] || "",
+      link: r["Link YT"]
+    }))
+    .filter(d => d.dateObj !== null);
 
   initDefaults();
   applyFilters();
 }
 
-/* ---------------- Defaults ---------------- */
-
 function initDefaults(){
 
-  const validDates = state.data
-    .map(d => d.dateObj)
-    .filter(d => d && !isNaN(d.getTime()));
+  const lengths = state.data.map(d => d.lengthSec);
 
-  if(validDates.length){
-    const min = new Date(Math.min(...validDates.map(d => d.getTime())));
-    const today = new Date();
+  document.getElementById("minLength").value =
+    Math.floor(Math.min(...lengths)/60);
 
-    document.getElementById("minDate").value =
-      min.toISOString().slice(0,10);
+  document.getElementById("maxLength").value =
+    Math.ceil(Math.max(...lengths)/60);
 
-    document.getElementById("maxDate").value =
-      today.toISOString().slice(0,10);
-  }
+  const dates = state.data.map(d => d.dateObj.getTime());
+  const min = new Date(Math.min(...dates));
+  const today = new Date();
 
-  const validLengths = state.data
-    .map(d => d.lengthSec)
-    .filter(n => n && !isNaN(n));
+  document.getElementById("minDate").value =
+    min.toISOString().split("T")[0];
 
-  if(validLengths.length){
-    document.getElementById("minLength").value =
-      Math.floor(Math.min(...validLengths) / 60);
-
-    document.getElementById("maxLength").value =
-      Math.ceil(Math.max(...validLengths) / 60);
-  }
+  document.getElementById("maxDate").value =
+    today.toISOString().split("T")[0];
 }
-
-/* ---------------- Filtering ---------------- */
 
 function applyFilters(){
 
-  const search = document.getElementById("search").value.toLowerCase();
-  const minLen = Number(document.getElementById("minLength").value) * 60;
-  const maxLen = Number(document.getElementById("maxLength").value) * 60;
-  const minDate = new Date(document.getElementById("minDate").value);
-  const maxDate = new Date(document.getElementById("maxDate").value);
+  const search =
+    document.getElementById("search").value.toLowerCase();
+
+  const minLen =
+    Number(document.getElementById("minLength").value)*60;
+
+  const maxLen =
+    Number(document.getElementById("maxLength").value)*60;
+
+  const minDate =
+    new Date(document.getElementById("minDate").value);
+
+  const maxDate =
+    new Date(document.getElementById("maxDate").value);
 
   state.filtered = state.data.filter(d => {
 
-    if(!d.title || !d.title.toLowerCase().includes(search))
+    if(!d.title.toLowerCase().includes(search))
       return false;
 
     if(d.lengthSec < minLen || d.lengthSec > maxLen)
@@ -138,8 +124,6 @@ function applyFilters(){
   renderTable();
 }
 
-/* ---------------- Constraints ---------------- */
-
 function renderConstraints(){
 
   const counts = {};
@@ -150,7 +134,9 @@ function renderConstraints(){
     });
   });
 
-  const container = document.getElementById("constraintsList");
+  const container =
+    document.getElementById("constraintsList");
+
   container.innerHTML = "";
 
   Object.keys(counts)
@@ -158,11 +144,12 @@ function renderConstraints(){
     .forEach(c => {
 
       const label = document.createElement("label");
-      const checked = state.selectedConstraints.has(c) ? "checked" : "";
+      const checked =
+        state.selectedConstraints.has(c) ? "checked" : "";
 
       label.innerHTML =
         `<input type="checkbox" ${checked}>
-         <span>${c} (${counts[c]})</span>`;
+         ${c} (${counts[c]})`;
 
       label.querySelector("input").onchange = e => {
         if(e.target.checked)
@@ -181,11 +168,11 @@ function renderConstraints(){
     `Constraints (${state.selectedConstraints.size})`;
 }
 
-/* ---------------- Table ---------------- */
-
 function renderTable(){
 
-  const tbody = document.getElementById("tableBody");
+  const tbody =
+    document.getElementById("tableBody");
+
   tbody.innerHTML = "";
 
   const solvedMap =
@@ -198,15 +185,20 @@ function renderTable(){
 
       const tr = document.createElement("tr");
 
-      const isSolved = solvedMap[d.title] || false;
+      const isSolved =
+        solvedMap[d.title] || false;
 
       const toggle = document.createElement("div");
-      toggle.className = "toggle" + (isSolved ? " active" : "");
+      toggle.className =
+        "toggle" + (isSolved ? " active" : "");
+
       toggle.onclick = e => {
         e.stopPropagation();
         solvedMap[d.title] = !isSolved;
-        localStorage.setItem("solvedMap",
-          JSON.stringify(solvedMap));
+        localStorage.setItem(
+          "solvedMap",
+          JSON.stringify(solvedMap)
+        );
         renderTable();
       };
 
@@ -215,14 +207,15 @@ function renderTable(){
         <td>${d.dateStr}</td>
         <td>${d.title}</td>
         <td>${d.lengthStr}</td>
-        <td>${d.constraints.map(c =>
-          `<span class="badge">${c}</span>`).join("")}</td>
+        <td>${d.constraints.join(", ")}</td>
         <td>${d.host}</td>
         <td>${d.setter}</td>
       `;
 
       tr.children[0].appendChild(toggle);
-      tr.onclick = () => window.open(d.link,"_blank");
+
+      tr.onclick = () =>
+        window.open(d.link, "_blank");
 
       tbody.appendChild(tr);
     });
@@ -231,14 +224,9 @@ function renderTable(){
     `Showing ${state.filtered.length} of ${state.data.length} sudoku`;
 }
 
-/* ---------------- Events ---------------- */
-
 document.addEventListener("input", applyFilters);
 
-document.getElementById("resetBtn").onclick = () => {
-  location.reload();
-};
-
-/* ---------------- Init ---------------- */
+document.getElementById("resetBtn").onclick =
+  () => location.reload();
 
 loadData();
