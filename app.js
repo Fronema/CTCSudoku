@@ -13,8 +13,12 @@ selectedConstraints: new Set(),
 selectedHosts: new Set(),
 selectedSetters: new Set(),
 page: 1,
-rowsPerPage: 50
+rowsPerPage: 50,
+sortKey: "date",
+sortDir: "desc"
 };
+
+/* ================= Utilities ================= */
 
 function parseDate(str){
 if(!str) return null;
@@ -33,6 +37,8 @@ const p=str.split(":").map(Number);
 if(p.length!==3) return 0;
 return p[0]*3600+p[1]*60+p[2];
 }
+
+/* ================= Load Data ================= */
 
 async function loadData(){
 
@@ -65,6 +71,8 @@ initDefaults();
 applyFilters();
 }
 
+/* ================= Defaults ================= */
+
 function initDefaults(){
 
 const lengths=state.data.map(d=>d.lengthSec);
@@ -82,6 +90,8 @@ min.toISOString().split("T")[0];
 document.getElementById("maxDate").value=
 today.toISOString().split("T")[0];
 }
+
+/* ================= Filtering ================= */
 
 function applyFilters(){
 
@@ -121,11 +131,50 @@ return false;
 return true;
 });
 
+sortData();
 renderConstraints();
 renderPeople("host","hostsList",state.selectedHosts);
 renderPeople("setter","settersList",state.selectedSetters);
 renderTable();
 }
+
+/* ================= Sorting ================= */
+
+function sortData(){
+
+const dir=state.sortDir==="asc"?1:-1;
+
+state.filtered.sort((a,b)=>{
+
+let valA,valB;
+
+switch(state.sortKey){
+case "date":
+valA=a.dateObj; valB=b.dateObj; break;
+case "title":
+valA=a.title.toLowerCase(); valB=b.title.toLowerCase(); break;
+case "length":
+valA=a.lengthSec; valB=b.lengthSec; break;
+case "host":
+valA=a.host.toLowerCase(); valB=b.host.toLowerCase(); break;
+case "setter":
+valA=a.setter.toLowerCase(); valB=b.setter.toLowerCase(); break;
+case "solved":
+const solvedMap=JSON.parse(localStorage.getItem("solvedMap")||"{}");
+valA=solvedMap[a.title]?1:0;
+valB=solvedMap[b.title]?1:0;
+break;
+default:
+return 0;
+}
+
+if(valA<valB) return -1*dir;
+if(valA>valB) return 1*dir;
+return 0;
+});
+}
+
+/* ================= Constraints ================= */
 
 function renderConstraints(){
 
@@ -173,6 +222,8 @@ applyFilters();
 parent.appendChild(label);
 }
 
+/* ================= People ================= */
+
 function renderPeople(key,listId,set){
 
 const counts={};
@@ -200,6 +251,8 @@ applyFilters();
 container.appendChild(label);
 });
 }
+
+/* ================= Table ================= */
 
 function renderTable(){
 
@@ -243,6 +296,25 @@ document.getElementById("counter").textContent=
 `Showing ${state.filtered.length} of ${state.data.length} sudoku`;
 }
 
+/* ================= Events ================= */
+
 document.addEventListener("input",applyFilters);
+
+document.querySelectorAll("th[data-sort]").forEach(th=>{
+th.addEventListener("click",()=>{
+const key=th.dataset.sort;
+
+if(state.sortKey===key){
+state.sortDir=state.sortDir==="asc"?"desc":"asc";
+}else{
+state.sortKey=key;
+state.sortDir="asc";
+}
+
+applyFilters();
+});
+});
+
 document.getElementById("resetBtn").onclick=()=>location.reload();
+
 loadData();
