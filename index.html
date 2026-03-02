@@ -1,248 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CTC Finder</title>
-<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-
-<style>
-:root{
-  --bg:#0b0f18;
-  --panel:#111827;
-  --panel-soft:#141c2b;
-  --accent:#22d3ee;
-  --accent-soft:rgba(34,211,238,0.15);
-  --green:#22c55e;
-  --text:#e6edf3;
-  --muted:#8b9bb0;
-  --border:#1e293b;
-}
-
-body{
-  margin:0;
-  font-family:Inter,system-ui,-apple-system;
-  background:var(--bg);
-  color:var(--text);
-}
-
-.container{padding:20px;}
-
-.topbar{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  margin-bottom:14px;
-}
-
-.logo{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  font-weight:600;
-  font-size:1rem;
-  letter-spacing:0.04em;
-}
-
-.logo svg{
-  width:20px;
-  height:20px;
-  stroke:var(--accent);
-}
-
-.filters{
-  position:sticky;
-  top:0;
-  background:var(--panel);
-  padding:20px;
-  border-bottom:1px solid var(--border);
-  box-shadow:0 10px 30px rgba(0,0,0,0.5);
-  z-index:10;
-}
-
-.filter-row{
-  display:flex;
-  flex-wrap:wrap;
-  gap:12px;
-  align-items:center;
-  margin-bottom:14px;
-}
-
-.filter-row label{
-  font-size:0.7rem;
-  text-transform:uppercase;
-  letter-spacing:0.08em;
-  color:var(--muted);
-}
-
-.filter-row input,
-.filter-row select{
-  background:var(--panel-soft);
-  border:1px solid var(--border);
-  color:var(--text);
-  padding:6px 10px;
-  border-radius:8px;
-  font-size:0.85rem;
-  outline:none;
-}
-
-.filter-row input:focus,
-.filter-row select:focus{
-  border-color:var(--accent);
-}
-
-.filter-row input.active,
-.filter-row select.active{
-  border-color:var(--accent);
-  background:#162234;
-}
-
-.reset-btn{
-  background:var(--accent-soft);
-  border:1px solid var(--accent);
-  color:var(--accent);
-  padding:6px 14px;
-  border-radius:999px;
-  cursor:pointer;
-  font-weight:600;
-}
-
-details summary{
-  cursor:pointer;
-  font-weight:600;
-  margin:8px 0;
-}
-
-.checkbox-group{
-  display:flex;
-  flex-wrap:wrap;
-  gap:6px 14px;
-  font-size:0.8rem;
-}
-
-.badge{
-  display:inline-block;
-  padding:4px 8px;
-  border-radius:6px;
-  font-size:0.7rem;
-  margin-right:4px;
-  background:var(--accent-soft);
-  border:1px solid rgba(34,211,238,0.3);
-  color:var(--accent);
-}
-
-.counter{
-  margin-top:10px;
-  font-size:0.8rem;
-  color:var(--muted);
-}
-
-table{
-  width:100%;
-  border-collapse:collapse;
-  margin-top:20px;
-  font-size:0.85rem;
-}
-
-th{
-  text-align:left;
-  padding:10px;
-  font-size:0.7rem;
-  text-transform:uppercase;
-  letter-spacing:0.08em;
-  color:var(--muted);
-  cursor:pointer;
-}
-
-td{
-  padding:14px 10px;
-  border-bottom:1px solid var(--border);
-}
-
-tr:hover{
-  background:#111c2b;
-}
-
-.title-link{
-  cursor:pointer;
-  font-weight:500;
-}
-
-.title-link:hover{
-  text-decoration:underline;
-  color:var(--accent);
-}
-
-.toggle{
-  width:36px;
-  height:18px;
-  background:#1f2937;
-  border-radius:999px;
-  position:relative;
-  cursor:pointer;
-  border:1px solid var(--border);
-}
-
-.toggle::after{
-  content:"";
-  position:absolute;
-  width:14px;
-  height:14px;
-  background:#555;
-  border-radius:50%;
-  top:1px;
-  left:2px;
-}
-
-.toggle.active{
-  background:var(--green);
-  border-color:var(--green);
-}
-
-.toggle.active::after{
-  left:18px;
-  background:white;
-}
-
-.pagination{
-  margin-top:16px;
-  display:flex;
-  gap:8px;
-  align-items:center;
-  flex-wrap:wrap;
-}
-
-button{
-  background:var(--panel-soft);
-  border:1px solid var(--border);
-  color:var(--text);
-  padding:6px 12px;
-  border-radius:8px;
-  cursor:pointer;
-}
-
-button:disabled{
-  opacity:0.4;
-}
-
-a{
-  color:var(--accent);
-  text-decoration:none;
-}
-
-a:hover{
-  text-decoration:underline;
-}
-</style>
+  <meta charset="UTF-8">
+  <title>CTC Finder</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 </head>
-
 <body>
 
-<div class="filters container">
-
-<div class="topbar">
+<header class="topbar">
   <div class="logo">
-    CTC Finder
+    <span>CTC Finder</span>
     <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5">
       <rect x="3" y="3" width="6" height="6"/>
       <rect x="9" y="3" width="6" height="6"/>
@@ -255,241 +24,64 @@ a:hover{
       <rect x="15" y="15" width="6" height="6"/>
     </svg>
   </div>
-</div>
+</header>
 
-<div class="filter-row">
-<label>Title</label>
-<input type="text" id="search" style="width:30%;min-width:160px;">
+<section class="filters">
+  <div class="filter-row">
+    <input type="text" id="search" placeholder="Title">
 
-<label>Min</label>
-<input type="number" id="minLength" style="width:70px;">
+    <input type="number" id="minLength" placeholder="Min min">
+    <input type="number" id="maxLength" placeholder="Max min">
 
-<label>Max</label>
-<input type="number" id="maxLength" style="width:70px;">
+    <input type="date" id="minDate">
+    <input type="date" id="maxDate">
 
-<label>Newer</label>
-<input type="date" id="minDate">
+    <select id="statusFilter">
+      <option value="all">All</option>
+      <option value="solved">Solved</option>
+      <option value="unsolved">Unsolved</option>
+    </select>
 
-<label>Older</label>
-<input type="date" id="maxDate">
+    <button id="resetBtn">Reset</button>
+  </div>
 
-<select id="statusFilter">
-<option value="all">All</option>
-<option value="solved">Solved</option>
-<option value="unsolved">Unsolved</option>
-</select>
+  <details id="constraintsContainer">
+    <summary>Constraints (0)</summary>
+    <div id="constraintsList" class="checkbox-group"></div>
+    <div class="constraint-footer">
+      <select id="constraintMode">
+        <option value="OR">OR</option>
+        <option value="AND">AND</option>
+      </select>
+    </div>
+  </details>
 
-<button id="resetBtn" class="reset-btn">Reset</button>
-</div>
+  <div id="counter" class="counter"></div>
+</section>
 
-<div id="constraintSection"></div>
-<div class="counter" id="counter"></div>
+<section class="table-container">
+  <table>
+    <thead>
+      <tr>
+        <th>Solved</th>
+        <th>Date</th>
+        <th>Title</th>
+        <th>Length</th>
+        <th>Constraints</th>
+        <th>Host</th>
+        <th>Setter</th>
+      </tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+  </table>
 
-</div>
+  <div class="pagination">
+    <button id="prevPage">Prev</button>
+    <span id="pageInfo"></span>
+    <button id="nextPage">Next</button>
+  </div>
+</section>
 
-<div class="container">
-<table>
-<thead>
-<tr>
-<th data-sort="solved">Solved</th>
-<th data-sort="date">Date</th>
-<th data-sort="title">Title</th>
-<th data-sort="length">Length</th>
-<th>Constraints</th>
-<th data-sort="host">Host</th>
-<th data-sort="setter">Setter</th>
-</tr>
-</thead>
-<tbody id="tableBody"></tbody>
-</table>
-
-<div class="pagination">
-<button id="prevPage">Previous</button>
-<button id="nextPage">Next</button>
-<span id="pageInfo"></span>
-</div>
-</div>
-
-<script>
-const CSV_URL="https://docs.google.com/spreadsheets/d/1rVqAjm-l_Urjd3TNmIc3SmTmz_OlgSoBuhY7RPgiuRg/export?format=csv&gid=725349095";
-
-const months={
-  Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,
-  Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11
-};
-
-const STATE={
-  data:[],
-  filtered:[],
-  selectedConstraints:new Set(),
-  page:1,
-  rowsPerPage:50
-};
-
-function parseDate(str){
-  if(!str || !str.includes("-")) return null;
-
-  const parts = str.trim().split("-");
-  if(parts.length !== 3) return null;
-
-  const day = Number(parts[0]);
-  const mon = months[parts[1]];
-  const year = Number(parts[2]);
-
-  if(isNaN(day) || isNaN(year) || mon === undefined) return null;
-
-  return new Date(year, mon, day);
-}
-function toSeconds(str){
-  if(!str) return 0;
-  const p=str.split(":").map(Number);
-  return p.length===3 ? p[0]*3600+p[1]*60+p[2] : 0;
-}
-
-async function loadData(){
-  const res=await fetch(CSV_URL);
-  const text=await res.text();
-  const parsed=Papa.parse(text,{header:true,skipEmptyLines:true});
-
-  STATE.data = parsed.data
-    .filter(r => (r["Video Type"]||"").trim()==="Sudoku")
-    .map(r=>({
-      title:r["Video Title"],
-      dateStr:r.Date,
-      dateObj:parseDate(r.Date),
-      lengthStr:r.Length,
-      lengthSec:toSeconds(r.Length),
-      constraints:(r["Puzzle Sub-Type / Constraints"]||"")
-        .split(";").map(s=>s.trim()).filter(Boolean),
-      host:r["Host/Solver"]||"",
-      setter:r.Setter||"",
-      link:r["Link YT"]
-    }));
-
-  initDefaults();
-  applyFilters();
-}
-
-function initDefaults(){
-
-  const validDates = STATE.data
-    .map(d => d.dateObj)
-    .filter(d => d instanceof Date && !isNaN(d));
-
-  if(validDates.length === 0) return;
-
-  const minDate = new Date(Math.min(...validDates.map(d=>d.getTime())));
-  const today = new Date();
-
-  document.getElementById("minDate").value =
-    minDate.toISOString().split("T")[0];
-
-  document.getElementById("maxDate").value =
-    today.toISOString().split("T")[0];
-
-  const validLengths = STATE.data
-    .map(d => d.lengthSec)
-    .filter(n => !isNaN(n) && n > 0);
-
-  if(validLengths.length){
-    document.getElementById("minLength").value =
-      Math.floor(Math.min(...validLengths)/60);
-
-    document.getElementById("maxLength").value =
-      Math.ceil(Math.max(...validLengths)/60);
-  }
-}
-
-
-function renderConstraints(){
-  const counts={};
-
-  STATE.filtered.forEach(d=>{
-    d.constraints.forEach(c=>{
-      counts[c]=(counts[c]||0)+1;
-    });
-  });
-
-  const container=document.getElementById("constraintSection");
-  container.innerHTML="";
-
-  const details=document.createElement("details");
-  details.innerHTML=`<summary>Constraints (${STATE.selectedConstraints.size})</summary>`;
-
-  const group=document.createElement("div");
-  group.className="checkbox-group";
-
-  Object.keys(counts)
-    .sort((a,b)=>counts[b]-counts[a])
-    .forEach(c=>{
-      const label=document.createElement("label");
-      const checked=STATE.selectedConstraints.has(c)?"checked":"";
-      label.innerHTML=`<input type="checkbox" ${checked}> <span>${c} (${counts[c]})</span>`;
-      label.querySelector("input").onchange=e=>{
-        if(e.target.checked) STATE.selectedConstraints.add(c);
-        else STATE.selectedConstraints.delete(c);
-        applyFilters();
-      };
-      group.appendChild(label);
-    });
-
-  const modeSelect=document.createElement("select");
-  modeSelect.id="constraintMode";
-  modeSelect.innerHTML=`<option value="OR">OR</option><option value="AND">AND</option>`;
-  details.appendChild(group);
-  details.appendChild(modeSelect);
-
-  container.appendChild(details);
-}
-
-function renderTable(){
-  const tbody=document.getElementById("tableBody");
-  tbody.innerHTML="";
-  const solvedMap=JSON.parse(localStorage.getItem("solvedMap")||"{}");
-
-  STATE.filtered
-    .slice((STATE.page-1)*STATE.rowsPerPage,STATE.page*STATE.rowsPerPage)
-    .forEach(d=>{
-      const tr=document.createElement("tr");
-
-      const isSolved=solvedMap[d.title]||false;
-      const toggle=document.createElement("div");
-      toggle.className="toggle"+(isSolved?" active":"");
-      toggle.onclick=e=>{
-        e.stopPropagation();
-        solvedMap[d.title]=!isSolved;
-        localStorage.setItem("solvedMap",JSON.stringify(solvedMap));
-        renderTable();
-      };
-
-      tr.innerHTML=`
-        <td></td>
-        <td>${d.dateStr}</td>
-        <td class="title-link">${d.title}</td>
-        <td>${d.lengthStr}</td>
-        <td>${d.constraints.map(c=>`<span class="badge">${c}</span>`).join("")}</td>
-        <td>${d.host}</td>
-        <td>${d.setter}</td>
-      `;
-
-      tr.children[0].appendChild(toggle);
-      tr.onclick=()=>window.open(d.link,"_blank");
-
-      tbody.appendChild(tr);
-    });
-
-  document.getElementById("counter").textContent=
-    `Showing ${STATE.filtered.length} of ${STATE.data.length} sudoku`;
-}
-
-document.addEventListener("input",applyFilters);
-document.getElementById("resetBtn").onclick=()=>location.reload();
-
-loadData();
-</script>
-
+<script src="app.js"></script>
 </body>
 </html>
-
-
-
