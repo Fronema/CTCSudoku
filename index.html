@@ -3,7 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sudoku Catalog</title>
+<title>Sudoku Catalogue</title>
+
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
 <style>
 :root {
@@ -22,10 +24,6 @@ body {
   color: var(--text);
 }
 
-h1 {
-  margin: 0 0 10px 0;
-}
-
 .container {
   padding: 20px;
 }
@@ -39,6 +37,10 @@ h1 {
   z-index: 10;
 }
 
+h1 {
+  margin: 0 0 15px 0;
+}
+
 .filter-group {
   margin-bottom: 10px;
 }
@@ -47,21 +49,13 @@ input, select {
   background: #22272e;
   border: 1px solid var(--border);
   color: var(--text);
-  padding: 6px;
+  padding: 5px;
   border-radius: 4px;
 }
 
 label {
-  font-size: 0.9rem;
   margin-right: 10px;
-}
-
-button {
-  background: var(--accent);
-  border: none;
-  padding: 6px 10px;
-  border-radius: 4px;
-  cursor: pointer;
+  font-size: 0.9rem;
 }
 
 table {
@@ -94,16 +88,16 @@ tr:hover {
 }
 
 .counter {
-  margin: 10px 0;
+  margin-top: 10px;
   color: var(--muted);
 }
 </style>
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 </head>
 
 <body>
+
 <div class="filters container">
-<h1>Sudoku Catalog</h1>
+<h1>Sudoku Catalogue</h1>
 
 <div class="filter-group">
 <label>Search:</label>
@@ -125,14 +119,12 @@ tr:hover {
 </div>
 
 <div class="filter-group">
-<label>Constraints mode:</label>
+<label>Constraint mode:</label>
 <select id="constraintMode">
 <option value="OR">OR</option>
 <option value="AND">AND</option>
 </select>
-</div>
 
-<div class="filter-group">
 <label>Status:</label>
 <select id="statusFilter">
 <option value="all">All</option>
@@ -150,11 +142,11 @@ tr:hover {
 <table>
 <thead>
 <tr>
-<th data-sort="date">Date</th>
-<th data-sort="title">Title</th>
-<th data-sort="host">Host</th>
-<th data-sort="setter">Setter</th>
-<th data-sort="length">Length</th>
+<th>Date</th>
+<th>Title</th>
+<th>Host</th>
+<th>Setter</th>
+<th>Length</th>
 <th>Constraints</th>
 <th>Solved</th>
 </tr>
@@ -162,7 +154,6 @@ tr:hover {
 <tbody id="tableBody"></tbody>
 </table>
 </div>
-
 
 <script>
 
@@ -195,28 +186,25 @@ function saveSolvedMap(map) {
   localStorage.setItem("solvedMap", JSON.stringify(map));
 }
 
-<script>
 async function loadData() {
   const res = await fetch(CSV_URL);
   const text = await res.text();
 
   const lines = text.split("\n");
-  const cleaned = lines.slice(1).join("\n");
+  const cleaned = lines.slice(1).join("\n"); // odstraní první prázdný řádek
 
   const parsed = Papa.parse(cleaned, {
     header: true,
     skipEmptyLines: true
   });
 
-  console.log("FIELDS:", parsed.meta.fields);
-  console.log("FIRST ROW:", parsed.data[0]);
-
-  DATA = parsed.data;  // ZATÍM bez filtru
+  DATA = parsed.data.filter(r => 
+    (r["Video Type"] || "").trim().toLowerCase() === "sudoku"
+  );
 
   generateDynamicFilters();
   render();
 }
-
 
 function generateDynamicFilters() {
   const container = document.getElementById("dynamicFilters");
@@ -354,10 +342,7 @@ document.addEventListener("input", render);
 
 loadData();
 
-
 </script>
+
 </body>
-
 </html>
-
-
