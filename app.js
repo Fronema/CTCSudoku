@@ -41,10 +41,17 @@ async function loadData(){
 
   const res = await fetch(CSV_URL);
   const text = await res.text();
-  const parsed = Papa.parse(text, {
+
+  const cleanedText = text.replace(/^\s*,+\s*\n/, ""); 
+  // remove first empty comma row
+
+  const parsed = Papa.parse(cleanedText, {
     header: true,
     skipEmptyLines: true
   });
+
+  console.log("Rows loaded:", parsed.data.length);
+  console.log("First real row:", parsed.data[0]);
 
   state.data = parsed.data
     .filter(r => r["Video Type"] === "Sudoku")
@@ -63,6 +70,8 @@ async function loadData(){
       link: r["Link YT"]
     }))
     .filter(d => d.dateObj !== null);
+
+  console.log("Valid parsed entries:", state.data.length);
 
   initDefaults();
   applyFilters();
