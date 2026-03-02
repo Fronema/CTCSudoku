@@ -1,12 +1,7 @@
-// CTC Finder - main application logic
+// CTC Finder - stable build
 
 const CSV_URL =
   "https://docs.google.com/spreadsheets/d/1rVqAjm-l_Urjd3TNmIc3SmTmz_OlgSoBuhY7RPgiuRg/export?format=csv&gid=725349095";
-
-const months = {
-  Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,
-  Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11
-};
 
 const state = {
   data: [],
@@ -20,21 +15,20 @@ const state = {
 
 function parseDate(str){
   if(!str) return null;
-  const parts = str.trim().split("-");
-  if(parts.length !== 3) return null;
 
-  const day = Number(parts[0]);
-  const mon = months[parts[1]];
-  const year = Number(parts[2]);
+  const cleaned = str.trim();
+  const normalized = cleaned.replace(/-/g, " ");
+  const date = new Date(normalized);
 
-  if(isNaN(day) || mon === undefined || isNaN(year)) return null;
-  return new Date(year, mon, day);
+  if (isNaN(date.getTime())) return null;
+  return date;
 }
 
 function toSeconds(str){
   if(!str) return 0;
-  const p = str.split(":").map(Number);
-  return p.length === 3 ? p[0]*3600 + p[1]*60 + p[2] : 0;
+  const parts = str.split(":").map(Number);
+  if(parts.length !== 3) return 0;
+  return parts[0]*3600 + parts[1]*60 + parts[2];
 }
 
 /* ---------------- Data Loading ---------------- */
@@ -44,21 +38,41 @@ async function loadData(){
   const text = await res.text();
   const parsed = Papa.parse(text, { header:true, skipEmptyLines:true });
 
-  state.data = parsed.data
-    .filter(r => (r["Video Type"] || "").trim() === "Sudoku")
-    .map(r => ({
-      title: r["Video Title"],
-      dateStr: r.Date,
-      dateObj: parseDate(r.Date),
-      lengthStr: r.Length,
-      lengthSec: toSeconds(r.Length),
-      constraints: (r["Puzzle Sub-Type / Constraints"] || "")
-        .split(";").map(s => s.trim()).filter(Boolean),
-      host: r["Host/Solver"] || "",
-      setter: r.Setter || "",
-      link: r["Link YT"]
-    }))
-    .filter(d => d.dateObj !== null);
+  console.log("Rows loaded:", parsed.data.length);
+  console.log("First row sample:", parsed.data[0]);
+
+  // Robust Sudoku detection (no fragile column name dependency)
+  const sudokuRows = parsed.data.filter(row =>
+    Object.values(row).join(" ").includes("Sudoku")
+  );
+
+  console.log("Sudoku rows detected:", sudokuRows.length);
+
+  state.data = sudokuRows.map(row => {
+    const parsedDate = parseDate(row.Date);
+
+    return {
+      title: row["Video Title"],
+      dateStr: row.Date,
+      dateObj: parsedDate,
+      lengthStr: row.Length,
+      lengthSec: toSeconds(row.Length),
+      constraints: (row["Puzzle Sub-Type / Constraints"] || "")
+        .split(";")
+        .map(s => s.trim())
+        .filter(Boolean),
+      host: row["Host/Solver"] || "",
+      setter: row.Setter || "",
+      link: row["Link YT"]
+    };
+  }).filter(d => d.dateObj !== null);
+
+  console.log("Valid parsed entries:", state.data.length);
+
+  if(state.data.length === 0){
+    console.warn("No valid Sudoku data parsed.");
+    return;
+  }
 
   initDefaults();
   applyFilters();
@@ -72,7 +86,7 @@ function initDefaults(){
     .map(d => d.dateObj)
     .filter(d => d && !isNaN(d.getTime()));
 
-  if (validDates.length) {
+  if(validDates.length){
     const min = new Date(Math.min(...validDates.map(d => d.getTime())));
     const today = new Date();
 
@@ -87,7 +101,7 @@ function initDefaults(){
     .map(d => d.lengthSec)
     .filter(n => n && !isNaN(n));
 
-  if (validLengths.length) {
+  if(validLengths.length){
     document.getElementById("minLength").value =
       Math.floor(Math.min(...validLengths) / 60);
 
@@ -95,6 +109,7 @@ function initDefaults(){
       Math.ceil(Math.max(...validLengths) / 60);
   }
 }
+
 /* ---------------- Filtering ---------------- */
 
 function applyFilters(){
@@ -106,9 +121,16 @@ function applyFilters(){
   const maxDate = new Date(document.getElementById("maxDate").value);
 
   state.filtered = state.data.filter(d => {
-    if(!d.title.toLowerCase().includes(search)) return false;
-    if(d.lengthSec < minLen || d.lengthSec > maxLen) return false;
-    if(d.dateObj < minDate || d.dateObj > maxDate) return false;
+
+    if(!d.title || !d.title.toLowerCase().includes(search))
+      return false;
+
+    if(d.lengthSec < minLen || d.lengthSec > maxLen)
+      return false;
+
+    if(d.dateObj < minDate || d.dateObj > maxDate)
+      return false;
+
     return true;
   });
 
