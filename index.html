@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sudoku Catalog</title>
+
+<style>
+:root {
+  --bg: #121417;
+  --panel: #1b1f24;
+  --accent: #3ea6ff;
+  --text: #e6e6e6;
+  --muted: #9aa4ad;
+  --border: #2a2f36;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+h1 {
+  margin: 0 0 10px 0;
+}
+
+.container {
+  padding: 20px;
+}
+
+.filters {
+  position: sticky;
+  top: 0;
+  background: var(--panel);
+  padding: 15px;
+  border-bottom: 1px solid var(--border);
+  z-index: 10;
+}
+
+.filter-group {
+  margin-bottom: 10px;
+}
+
+input, select {
+  background: #22272e;
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 6px;
+  border-radius: 4px;
+}
+
+label {
+  font-size: 0.9rem;
+  margin-right: 10px;
+}
+
+button {
+  background: var(--accent);
+  border: none;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th, td {
+  padding: 8px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+
+th {
+  cursor: pointer;
+  color: var(--accent);
+}
+
+tr:hover {
+  background: #1e242b;
+}
+
+.badge {
+  background: #2c3440;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  margin-right: 4px;
+  display: inline-block;
+}
+
+.counter {
+  margin: 10px 0;
+  color: var(--muted);
+}
+</style>
+</head>
+
+<body>
+<div class="filters container">
+<h1>Sudoku Catalog</h1>
+
+<div class="filter-group">
+<label>Search:</label>
+<input type="text" id="search">
+</div>
+
+<div class="filter-group">
+<label>Min length (min):</label>
+<input type="number" id="minLength">
+<label>Max length (min):</label>
+<input type="number" id="maxLength">
+</div>
+
+<div class="filter-group">
+<label>Date newer than:</label>
+<input type="date" id="minDate">
+<label>Date older than:</label>
+<input type="date" id="maxDate">
+</div>
+
+<div class="filter-group">
+<label>Constraints mode:</label>
+<select id="constraintMode">
+<option value="OR">OR</option>
+<option value="AND">AND</option>
+</select>
+</div>
+
+<div class="filter-group">
+<label>Status:</label>
+<select id="statusFilter">
+<option value="all">All</option>
+<option value="solved">Solved</option>
+<option value="unsolved">Unsolved</option>
+</select>
+</div>
+
+<div id="dynamicFilters"></div>
+
+<div class="counter" id="counter"></div>
+</div>
+
+<div class="container">
+<table>
+<thead>
+<tr>
+<th data-sort="date">Date</th>
+<th data-sort="title">Title</th>
+<th data-sort="host">Host</th>
+<th data-sort="setter">Setter</th>
+<th data-sort="length">Length</th>
+<th>Constraints</th>
+<th>Solved</th>
+</tr>
+</thead>
+<tbody id="tableBody"></tbody>
+</table>
+</div>
+
+
+<script>
+
+const CSV_URL = "https://docs.google.com/spreadsheets/d/1rVqAjm-l_Urjd3TNmIc3SmTmz_OlgSoBuhY7RPgiuRg/export?format=csv&gid=725349095";
+
+let DATA = [];
+
+const months = {
+Jan:0, Feb:1, Mar:2, Apr:3, May:4, Jun:5,
+Jul:6, Aug:7, Sep:8, Oct:9, Nov:10, Dec:11
+};
+
+function parseLength(str) {
+  const parts = str.split(":").map(Number);
+  if (parts.length === 3)
+    return parts[0]*3600 + parts[1]*60 + parts[2];
+  return 0;
+}
+
+function parseDate(str) {
+  const [day, mon, year] = str.split("-");
+  return new Date(year, months[mon], day);
+}
+
+function getSolvedMap() {
+  return JSON.parse(localStorage.getItem("solvedMap") || "{}");
+}
+
+function saveSolvedMap(map) {
+  localStorage.setItem("solvedMap", JSON.stringify(map));
+}
+
+async function loadData() {
+  const res = await fetch(CSV_URL);
+  const text = await res.text();
+  const rows = text.split("\n").map(r => r.split(","));
+
+  const headers = rows[0];
+  const videoTypeIndex = headers.indexOf("Video Type");
+
+  DATA = rows.slice(1)
+    .map(row => {
+      const obj = {};
+      headers.forEach((h,i)=> obj[h]=row[i]);
+      return obj;
+    })
+    .filter(r => r["Video Type"] === "Sudoku");
+
+  generateDynamicFilters();
+  render();
+}
+
+function generateDynamicFilters() {
+  const container = document.getElementById("dynamicFilters");
+  container.innerHTML = "";
+
+  const hosts = [...new Set(DATA.map(d=>d["Host/Solver"]).filter(Boolean))];
+  const setters = [...new Set(DATA.map(d=>d["Setter"]).filter(Boolean))];
+  const constraints = [...new Set(
+    DATA.flatMap(d =>
+      (d["Puzzle Sub-Type / Constraints"] || "")
+        .split(";")
+        .map(s=>s.trim())
+        .filter(Boolean)
+    )
+  )];
+
+  container.appendChild(createCheckboxGroup("Hosts", hosts, "hostCheckbox"));
+  container.appendChild(createCheckboxGroup("Setters", setters, "setterCheckbox"));
+  container.appendChild(createCheckboxGroup("Constraints", constraints, "constraintCheckbox"));
+}
+
+function createCheckboxGroup(title, items, className) {
+  const div = document.createElement("div");
+  div.className = "filter-group";
+
+  const label = document.createElement("div");
+  label.textContent = title;
+  label.style.marginBottom = "5px";
+  div.appendChild(label);
+
+  items.sort().forEach(item => {
+    const l = document.createElement("label");
+    l.innerHTML = `<input type="checkbox" value="${item}" class="${className}"> ${item}`;
+    div.appendChild(l);
+  });
+
+  return div;
+}
+
+function render() {
+  const tbody = document.getElementById("tableBody");
+  tbody.innerHTML = "";
+
+  const search = document.getElementById("search").value.toLowerCase();
+  const minLen = Number(document.getElementById("minLength").value) * 60;
+  const maxLen = Number(document.getElementById("maxLength").value) * 60;
+  const minDate = document.getElementById("minDate").value ? new Date(document.getElementById("minDate").value) : null;
+  const maxDate = document.getElementById("maxDate").value ? new Date(document.getElementById("maxDate").value) : null;
+  const constraintMode = document.getElementById("constraintMode").value;
+  const statusFilter = document.getElementById("statusFilter").value;
+  const solvedMap = getSolvedMap();
+
+  const selectedHosts = Array.from(document.querySelectorAll(".hostCheckbox:checked")).map(cb=>cb.value);
+  const selectedSetters = Array.from(document.querySelectorAll(".setterCheckbox:checked")).map(cb=>cb.value);
+  const selectedConstraints = Array.from(document.querySelectorAll(".constraintCheckbox:checked")).map(cb=>cb.value);
+
+  let filtered = DATA.filter(item => {
+
+    if (!(item["Video Title"]?.toLowerCase().includes(search) ||
+          item["Puzzle Title"]?.toLowerCase().includes(search)))
+      return false;
+
+    if (selectedHosts.length && !selectedHosts.includes(item["Host/Solver"])) return false;
+    if (selectedSetters.length && !selectedSetters.includes(item["Setter"])) return false;
+
+    const len = parseLength(item.Length || "0:00:00");
+    if (minLen && len < minLen) return false;
+    if (maxLen && len > maxLen) return false;
+
+    const date = parseDate(item.Date || "01-Jan-2000");
+    if (minDate && date < minDate) return false;
+    if (maxDate && date > maxDate) return false;
+
+    const isSolved = solvedMap[item["Video Title"]];
+    if (statusFilter === "solved" && !isSolved) return false;
+    if (statusFilter === "unsolved" && isSolved) return false;
+
+    if (selectedConstraints.length) {
+      const itemConstraints = (item["Puzzle Sub-Type / Constraints"] || "")
+        .split(";")
+        .map(s=>s.trim());
+
+      if (constraintMode === "OR") {
+        if (!selectedConstraints.some(c=>itemConstraints.includes(c))) return false;
+      } else {
+        if (!selectedConstraints.every(c=>itemConstraints.includes(c))) return false;
+      }
+    }
+
+    return true;
+  });
+
+  filtered.sort((a,b)=>parseDate(b.Date)-parseDate(a.Date));
+
+  document.getElementById("counter").textContent =
+    `Showing ${filtered.length} of ${DATA.length} sudoku`;
+
+  filtered.forEach(item=>{
+    const tr = document.createElement("tr");
+
+    tr.onclick = (e)=>{
+      if (e.target.type !== "checkbox")
+        window.open(item["Link YT"], "_blank");
+    };
+
+    const isSolved = solvedMap[item["Video Title"]] || false;
+
+    tr.innerHTML = `
+      <td>${item.Date}</td>
+      <td>${item["Video Title"]}</td>
+      <td>${item["Host/Solver"]}</td>
+      <td>${item["Setter"]}</td>
+      <td>${item.Length}</td>
+      <td>${(item["Puzzle Sub-Type / Constraints"]||"")
+          .split(";")
+          .map(c=>`<span class="badge">${c.trim()}</span>`)
+          .join("")}
+      </td>
+      <td><input type="checkbox" ${isSolved?"checked":""}></td>
+    `;
+
+    tr.querySelector("input").addEventListener("click",(e)=>{
+      e.stopPropagation();
+      const map = getSolvedMap();
+      map[item["Video Title"]] = e.target.checked;
+      saveSolvedMap(map);
+      render();
+    });
+
+    tbody.appendChild(tr);
+  });
+}
+
+document.addEventListener("input", render);
+
+loadData();
+
+
+</script>
+</body>
+</html>
