@@ -1,241 +1,248 @@
 const CSV_URL =
-  "https://docs.google.com/spreadsheets/d/1rVqAjm-l_Urjd3TNmIc3SmTmz_OlgSoBuhY7RPgiuRg/export?format=csv&gid=725349095";
+"https://docs.google.com/spreadsheets/d/1rVqAjm-l_Urjd3TNmIc3SmTmz_OlgSoBuhY7RPgiuRg/export?format=csv&gid=725349095";
 
 const months = {
-  Jan:0, Feb:1, Mar:2, Apr:3, May:4, Jun:5,
-  Jul:6, Aug:7, Sep:8, Oct:9, Nov:10, Dec:11
+Jan:0, Feb:1, Mar:2, Apr:3, May:4, Jun:5,
+Jul:6, Aug:7, Sep:8, Oct:9, Nov:10, Dec:11
 };
 
 const state = {
-  data: [],
-  filtered: [],
-  selectedConstraints: new Set(),
-  page: 1,
-  rowsPerPage: 50
+data: [],
+filtered: [],
+selectedConstraints: new Set(),
+selectedHosts: new Set(),
+selectedSetters: new Set(),
+page: 1,
+rowsPerPage: 50
 };
 
 function parseDate(str){
-  if(!str) return null;
-
-  const parts = str.trim().split("-");
-  if(parts.length !== 3) return null;
-
-  const day = Number(parts[0]);
-  const month = months[parts[1]];
-  const year = Number(parts[2]);
-
-  if(isNaN(day) || isNaN(year) || month === undefined)
-    return null;
-
-  return new Date(year, month, day);
+if(!str) return null;
+const parts=str.trim().split("-");
+if(parts.length!==3) return null;
+const day=Number(parts[0]);
+const month=months[parts[1]];
+const year=Number(parts[2]);
+if(isNaN(day)||isNaN(year)||month===undefined) return null;
+return new Date(year,month,day);
 }
 
 function toSeconds(str){
-  if(!str) return 0;
-  const p = str.split(":").map(Number);
-  if(p.length !== 3) return 0;
-  return p[0]*3600 + p[1]*60 + p[2];
+if(!str) return 0;
+const p=str.split(":").map(Number);
+if(p.length!==3) return 0;
+return p[0]*3600+p[1]*60+p[2];
 }
 
 async function loadData(){
 
-  const res = await fetch(CSV_URL);
-  const text = await res.text();
+const res=await fetch(CSV_URL);
+const text=await res.text();
+const cleaned=text.replace(/^\s*,+\s*\n/, "");
 
-  const cleanedText = text.replace(/^\s*,+\s*\n/, ""); 
-  // remove first empty comma row
+const parsed=Papa.parse(cleaned,{
+header:true,
+skipEmptyLines:true
+});
 
-  const parsed = Papa.parse(cleanedText, {
-    header: true,
-    skipEmptyLines: true
-  });
+state.data=parsed.data
+.filter(r=>r["Video Type"]==="Sudoku")
+.map(r=>({
+title:r["Video Title"],
+dateStr:r["Date"],
+dateObj:parseDate(r["Date"]),
+lengthStr:r["Length"],
+lengthSec:toSeconds(r["Length"]),
+constraints:(r["Puzzle Sub-Type / Constraints"]||"")
+.split(";").map(s=>s.trim()).filter(Boolean),
+host:r["Host/Solver"]||"",
+setter:r["Setter"]||"",
+link:r["Link YT"]
+}))
+.filter(d=>d.dateObj!==null);
 
-  console.log("Rows loaded:", parsed.data.length);
-  console.log("First real row:", parsed.data[0]);
-
-  state.data = parsed.data
-    .filter(r => r["Video Type"] === "Sudoku")
-    .map(r => ({
-      title: r["Video Title"],
-      dateStr: r["Date"],
-      dateObj: parseDate(r["Date"]),
-      lengthStr: r["Length"],
-      lengthSec: toSeconds(r["Length"]),
-      constraints: (r["Puzzle Sub-Type / Constraints"] || "")
-        .split(";")
-        .map(s => s.trim())
-        .filter(Boolean),
-      host: r["Host/Solver"] || "",
-      setter: r["Setter"] || "",
-      link: r["Link YT"]
-    }))
-    .filter(d => d.dateObj !== null);
-
-  console.log("Valid parsed entries:", state.data.length);
-
-  initDefaults();
-  applyFilters();
+initDefaults();
+applyFilters();
 }
 
 function initDefaults(){
 
-  const lengths = state.data.map(d => d.lengthSec);
+const lengths=state.data.map(d=>d.lengthSec);
+document.getElementById("minLength").value=
+Math.floor(Math.min(...lengths)/60);
+document.getElementById("maxLength").value=
+Math.ceil(Math.max(...lengths)/60);
 
-  document.getElementById("minLength").value =
-    Math.floor(Math.min(...lengths)/60);
+const dates=state.data.map(d=>d.dateObj.getTime());
+const min=new Date(Math.min(...dates));
+const today=new Date();
 
-  document.getElementById("maxLength").value =
-    Math.ceil(Math.max(...lengths)/60);
-
-  const dates = state.data.map(d => d.dateObj.getTime());
-  const min = new Date(Math.min(...dates));
-  const today = new Date();
-
-  document.getElementById("minDate").value =
-    min.toISOString().split("T")[0];
-
-  document.getElementById("maxDate").value =
-    today.toISOString().split("T")[0];
+document.getElementById("minDate").value=
+min.toISOString().split("T")[0];
+document.getElementById("maxDate").value=
+today.toISOString().split("T")[0];
 }
 
 function applyFilters(){
 
-  const search =
-    document.getElementById("search").value.toLowerCase();
+const search=document.getElementById("search").value.toLowerCase();
+const minLen=Number(document.getElementById("minLength").value)*60;
+const maxLen=Number(document.getElementById("maxLength").value)*60;
+const minDate=new Date(document.getElementById("minDate").value);
+const maxDate=new Date(document.getElementById("maxDate").value);
+const mode=document.getElementById("constraintMode").value;
 
-  const minLen =
-    Number(document.getElementById("minLength").value)*60;
+state.filtered=state.data.filter(d=>{
 
-  const maxLen =
-    Number(document.getElementById("maxLength").value)*60;
+if(!d.title.toLowerCase().includes(search)) return false;
+if(d.lengthSec<minLen||d.lengthSec>maxLen) return false;
+if(d.dateObj<minDate||d.dateObj>maxDate) return false;
 
-  const minDate =
-    new Date(document.getElementById("minDate").value);
+if(state.selectedConstraints.size){
+if(mode==="AND"){
+if(![...state.selectedConstraints].every(c=>d.constraints.includes(c)))
+return false;
+}else{
+if(![...state.selectedConstraints].some(c=>d.constraints.includes(c)))
+return false;
+}
+}
 
-  const maxDate =
-    new Date(document.getElementById("maxDate").value);
+if(state.selectedHosts.size){
+if(![...state.selectedHosts].some(h=>d.host.includes(h)))
+return false;
+}
 
-  state.filtered = state.data.filter(d => {
+if(state.selectedSetters.size){
+if(![...state.selectedSetters].some(s=>d.setter.includes(s)))
+return false;
+}
 
-    if(!d.title.toLowerCase().includes(search))
-      return false;
+return true;
+});
 
-    if(d.lengthSec < minLen || d.lengthSec > maxLen)
-      return false;
-
-    if(d.dateObj < minDate || d.dateObj > maxDate)
-      return false;
-
-    return true;
-  });
-
-  renderConstraints();
-  renderTable();
+renderConstraints();
+renderPeople("host","hostsList",state.selectedHosts);
+renderPeople("setter","settersList",state.selectedSetters);
+renderTable();
 }
 
 function renderConstraints(){
 
-  const counts = {};
+const counts={};
+state.filtered.forEach(d=>{
+d.constraints.forEach(c=>{
+counts[c]=(counts[c]||0)+1;
+});
+});
 
-  state.filtered.forEach(d => {
-    d.constraints.forEach(c => {
-      counts[c] = (counts[c] || 0) + 1;
-    });
-  });
+const container=document.getElementById("constraintsList");
+container.innerHTML="";
 
-  const container =
-    document.getElementById("constraintsList");
+const all=Object.keys(counts)
+.sort((a,b)=>counts[b]-counts[a]);
 
-  container.innerHTML = "";
+const top=all.filter(c=>counts[c]>=100);
+const rest=all.filter(c=>counts[c]<100);
 
-  Object.keys(counts)
-    .sort((a,b)=>counts[b]-counts[a])
-    .forEach(c => {
+top.forEach(c=>addConstraint(container,c,counts[c]));
 
-      const label = document.createElement("label");
-      const checked =
-        state.selectedConstraints.has(c) ? "checked" : "";
+if(rest.length){
+const more=document.createElement("details");
+more.innerHTML="<summary>More</summary>";
+rest.forEach(c=>addConstraint(more,c,counts[c]));
+container.appendChild(more);
+}
 
-      label.innerHTML =
-        `<input type="checkbox" ${checked}>
-         ${c} (${counts[c]})`;
+document.querySelector("#constraintsContainer summary")
+.textContent=`Constraints (${state.selectedConstraints.size})`;
+}
 
-      label.querySelector("input").onchange = e => {
-        if(e.target.checked)
-          state.selectedConstraints.add(c);
-        else
-          state.selectedConstraints.delete(c);
+function addConstraint(parent,c,count){
 
-        applyFilters();
-      };
+const checked=state.selectedConstraints.has(c)?"checked":"";
+const label=document.createElement("label");
+label.innerHTML=`<input type="checkbox" ${checked}> ${c} (${count})`;
 
-      container.appendChild(label);
-    });
+label.querySelector("input").onchange=e=>{
+if(e.target.checked) state.selectedConstraints.add(c);
+else state.selectedConstraints.delete(c);
+applyFilters();
+};
 
-  document.querySelector("#constraintsContainer summary")
-    .textContent =
-    `Constraints (${state.selectedConstraints.size})`;
+parent.appendChild(label);
+}
+
+function renderPeople(key,listId,set){
+
+const counts={};
+state.filtered.forEach(d=>{
+(d[key]||"").split(";").map(v=>v.trim()).filter(Boolean)
+.forEach(v=>counts[v]=(counts[v]||0)+1);
+});
+
+const container=document.getElementById(listId);
+container.innerHTML="";
+
+Object.keys(counts).sort((a,b)=>a.localeCompare(b))
+.forEach(name=>{
+
+const checked=set.has(name)?"checked":"";
+const label=document.createElement("label");
+label.innerHTML=`<input type="checkbox" ${checked}> ${name} (${counts[name]})`;
+
+label.querySelector("input").onchange=e=>{
+if(e.target.checked) set.add(name);
+else set.delete(name);
+applyFilters();
+};
+
+container.appendChild(label);
+});
 }
 
 function renderTable(){
 
-  const tbody =
-    document.getElementById("tableBody");
+const tbody=document.getElementById("tableBody");
+tbody.innerHTML="";
+const solvedMap=JSON.parse(localStorage.getItem("solvedMap")||"{}");
 
-  tbody.innerHTML = "";
+state.filtered
+.slice((state.page-1)*state.rowsPerPage,state.page*state.rowsPerPage)
+.forEach(d=>{
 
-  const solvedMap =
-    JSON.parse(localStorage.getItem("solvedMap") || "{}");
+const tr=document.createElement("tr");
 
-  state.filtered
-    .slice((state.page-1)*state.rowsPerPage,
-           state.page*state.rowsPerPage)
-    .forEach(d => {
+const isSolved=solvedMap[d.title]||false;
+const toggle=document.createElement("div");
+toggle.className="toggle"+(isSolved?" active":"");
+toggle.onclick=e=>{
+e.stopPropagation();
+solvedMap[d.title]=!isSolved;
+localStorage.setItem("solvedMap",JSON.stringify(solvedMap));
+renderTable();
+};
 
-      const tr = document.createElement("tr");
+tr.innerHTML=`
+<td></td>
+<td>${d.dateStr}</td>
+<td>${d.title}</td>
+<td>${d.lengthStr}</td>
+<td>${d.constraints.join(", ")}</td>
+<td>${d.host}</td>
+<td>${d.setter}</td>
+`;
 
-      const isSolved =
-        solvedMap[d.title] || false;
+tr.children[0].appendChild(toggle);
+tr.onclick=()=>window.open(d.link,"_blank");
 
-      const toggle = document.createElement("div");
-      toggle.className =
-        "toggle" + (isSolved ? " active" : "");
+tbody.appendChild(tr);
+});
 
-      toggle.onclick = e => {
-        e.stopPropagation();
-        solvedMap[d.title] = !isSolved;
-        localStorage.setItem(
-          "solvedMap",
-          JSON.stringify(solvedMap)
-        );
-        renderTable();
-      };
-
-      tr.innerHTML = `
-        <td></td>
-        <td>${d.dateStr}</td>
-        <td>${d.title}</td>
-        <td>${d.lengthStr}</td>
-        <td>${d.constraints.join(", ")}</td>
-        <td>${d.host}</td>
-        <td>${d.setter}</td>
-      `;
-
-      tr.children[0].appendChild(toggle);
-
-      tr.onclick = () =>
-        window.open(d.link, "_blank");
-
-      tbody.appendChild(tr);
-    });
-
-  document.getElementById("counter").textContent =
-    `Showing ${state.filtered.length} of ${state.data.length} sudoku`;
+document.getElementById("counter").textContent=
+`Showing ${state.filtered.length} of ${state.data.length} sudoku`;
 }
 
-document.addEventListener("input", applyFilters);
-
-document.getElementById("resetBtn").onclick =
-  () => location.reload();
-
+document.addEventListener("input",applyFilters);
+document.getElementById("resetBtn").onclick=()=>location.reload();
 loadData();
