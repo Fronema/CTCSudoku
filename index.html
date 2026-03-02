@@ -9,102 +9,117 @@
 
 <style>
 :root {
-  --bg: #121417;
-  --panel: #1b1f24;
-  --accent: #3ea6ff;
-  --text: #e6e6e6;
-  --muted: #9aa4ad;
-  --border: #2a2f36;
+  --bg:#121417;
+  --panel:#1b1f24;
+  --accent:#3ea6ff;
+  --text:#e6e6e6;
+  --muted:#9aa4ad;
+  --border:#2a2f36;
 }
 
-body {
-  margin: 0;
-  font-family: system-ui, sans-serif;
-  background: var(--bg);
-  color: var(--text);
+body{
+  margin:0;
+  font-family:system-ui, sans-serif;
+  background:var(--bg);
+  color:var(--text);
 }
 
-.container {
-  padding: 20px;
+.container{padding:16px;}
+
+.filters{
+  position:sticky;
+  top:0;
+  background:var(--panel);
+  border-bottom:1px solid var(--border);
+  z-index:10;
 }
 
-.filters {
-  position: sticky;
-  top: 0;
-  background: var(--panel);
-  padding: 15px;
-  border-bottom: 1px solid var(--border);
-  z-index: 10;
-  max-height: 70vh;
-  overflow-y: auto;
+.filter-row{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  align-items:center;
+  margin-bottom:8px;
 }
 
-h1 {
-  margin: 0 0 15px 0;
+.filter-row input,
+.filter-row select{
+  background:#22272e;
+  border:1px solid var(--border);
+  color:var(--text);
+  padding:4px 6px;
+  border-radius:4px;
+  font-size:0.85rem;
 }
 
-.filter-group {
-  margin-bottom: 12px;
+.filter-row label{
+  font-size:0.8rem;
+  color:var(--muted);
 }
 
-input, select {
-  background: #22272e;
-  border: 1px solid var(--border);
-  color: var(--text);
-  padding: 5px;
-  border-radius: 4px;
+details summary{
+  cursor:pointer;
+  font-weight:600;
+  margin:6px 0;
 }
 
-label {
-  margin-right: 10px;
-  font-size: 0.85rem;
+.checkbox-group{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px 12px;
+  font-size:0.8rem;
 }
 
-table {
-  width: 100%;
-  border-collapse: collapse;
+.badge{
+  background:#2c3440;
+  padding:2px 6px;
+  border-radius:4px;
+  font-size:0.7rem;
+  margin-right:4px;
+  display:inline-block;
 }
 
-th, td {
-  padding: 8px;
-  border-bottom: 1px solid var(--border);
-  text-align: left;
+table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:0.85rem;
 }
 
-tr:hover {
-  background: #1e242b;
+th,td{
+  padding:6px;
+  border-bottom:1px solid var(--border);
 }
 
-.badge {
-  background: #2c3440;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  margin-right: 4px;
-  display: inline-block;
+tr:hover{background:#1e242b;}
+
+.pagination{
+  margin-top:12px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
 }
 
-.counter {
-  margin-top: 10px;
-  color: var(--muted);
+button{
+  background:var(--accent);
+  border:none;
+  padding:4px 10px;
+  border-radius:4px;
+  cursor:pointer;
+  font-size:0.8rem;
 }
 
-.pagination {
-  margin-top: 15px;
+button:disabled{opacity:0.4;}
+
+.counter{
+  font-size:0.8rem;
+  color:var(--muted);
+  margin-top:6px;
 }
 
-button {
-  background: var(--accent);
-  border: none;
-  padding: 6px 12px;
-  margin-right: 5px;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-button:disabled {
-  opacity: 0.4;
-  cursor: default;
+@media(max-width:768px){
+  table{font-size:0.75rem;}
+  .filter-row{flex-direction:column; align-items:flex-start;}
 }
 </style>
 </head>
@@ -112,35 +127,23 @@ button:disabled {
 <body>
 
 <div class="filters container">
-<h1>Sudoku Catalogue</h1>
 
-<div class="filter-group">
-<label>Search:</label>
-<input type="text" id="search">
-</div>
+<div class="filter-row">
+<label>Title</label>
+<input type="text" id="search" style="flex:1; min-width:160px">
 
-<div class="filter-group">
-<label>Min length (min):</label>
-<input type="number" id="minLength">
-<label>Max length (min):</label>
-<input type="number" id="maxLength">
-</div>
+<label>Min (min)</label>
+<input type="number" id="minLength" style="width:70px">
 
-<div class="filter-group">
-<label>Date newer than:</label>
+<label>Max (min)</label>
+<input type="number" id="maxLength" style="width:70px">
+
+<label>Newer than</label>
 <input type="date" id="minDate">
-<label>Date older than:</label>
+
+<label>Older than</label>
 <input type="date" id="maxDate">
-</div>
 
-<div class="filter-group">
-<label>Constraint mode:</label>
-<select id="constraintMode">
-<option value="OR">OR</option>
-<option value="AND">AND</option>
-</select>
-
-<label>Status:</label>
 <select id="statusFilter">
 <option value="all">All</option>
 <option value="solved">Solved</option>
@@ -148,12 +151,24 @@ button:disabled {
 </select>
 </div>
 
-<div id="dynamicFilters"></div>
+<div id="constraintSection"></div>
+
+<details>
+<summary>Hosts</summary>
+<div id="hostSection" class="checkbox-group"></div>
+</details>
+
+<details>
+<summary>Setters</summary>
+<div id="setterSection" class="checkbox-group"></div>
+</details>
 
 <div class="counter" id="counter"></div>
+
 </div>
 
 <div class="container">
+
 <table>
 <thead>
 <tr>
@@ -179,159 +194,152 @@ button:disabled {
 
 <script>
 
-const CSV_URL = "https://docs.google.com/spreadsheets/d/1rVqAjm-l_Urjd3TNmIc3SmTmz_OlgSoBuhY7RPgiuRg/export?format=csv&gid=725349095";
+const CSV_URL="https://docs.google.com/spreadsheets/d/1rVqAjm-l_Urjd3TNmIc3SmTmz_OlgSoBuhY7RPgiuRg/export?format=csv&gid=725349095";
 
-let DATA = [];
-let filteredData = [];
-let currentPage = 1;
-const rowsPerPage = 50;
+let DATA=[];
+let filteredData=[];
+let currentPage=1;
+const rowsPerPage=50;
 
-const months = {
-Jan:0, Feb:1, Mar:2, Apr:3, May:4, Jun:5,
-Jul:6, Aug:7, Sep:8, Oct:9, Nov:10, Dec:11
-};
+const months={Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
 
-function parseLength(str) {
-  const parts = str.split(":").map(Number);
-  if (parts.length === 3)
-    return parts[0]*3600 + parts[1]*60 + parts[2];
-  return 0;
+function parseLength(str){
+  const p=str.split(":").map(Number);
+  return p.length===3?p[0]*3600+p[1]*60+p[2]:0;
 }
 
-function parseDate(str) {
-  const [day, mon, year] = str.split("-");
-  return new Date(year, months[mon], day);
+function parseDate(str){
+  const [d,m,y]=str.split("-");
+  return new Date(y,months[m],d);
 }
 
-function getSolvedMap() {
-  return JSON.parse(localStorage.getItem("solvedMap") || "{}");
+function getSolvedMap(){
+  return JSON.parse(localStorage.getItem("solvedMap")||"{}");
 }
 
-function saveSolvedMap(map) {
-  localStorage.setItem("solvedMap", JSON.stringify(map));
+function saveSolvedMap(map){
+  localStorage.setItem("solvedMap",JSON.stringify(map));
 }
 
-async function loadData() {
-  const res = await fetch(CSV_URL);
-  const text = await res.text();
+async function loadData(){
+  const res=await fetch(CSV_URL);
+  const text=await res.text();
+  const cleaned=text.split("\n").slice(1).join("\n");
 
-  const lines = text.split("\n");
-  const cleaned = lines.slice(1).join("\n");
+  const parsed=Papa.parse(cleaned,{header:true,skipEmptyLines:true});
 
-  const parsed = Papa.parse(cleaned, {
-    header: true,
-    skipEmptyLines: true
-  });
+  DATA=parsed.data.filter(r=>(r["Video Type"]||"").trim().toLowerCase()==="sudoku");
 
-  DATA = parsed.data.filter(r =>
-    (r["Video Type"] || "").trim().toLowerCase() === "sudoku"
-  );
-
+  initLengthDefaults();
   generateDynamicFilters();
   applyFilters();
 }
 
-function generateDynamicFilters() {
-  const container = document.getElementById("dynamicFilters");
-  container.innerHTML = "";
+function initLengthDefaults(){
+  const lengths=DATA.map(d=>parseLength(d.Length||"0:00:00")/60);
+  const min=Math.floor(Math.min(...lengths));
+  const max=Math.ceil(Math.max(...lengths));
+  document.getElementById("minLength").value=min;
+  document.getElementById("maxLength").value=max;
+}
 
-  const hosts = [...new Set(DATA.map(d=>d["Host/Solver"]).filter(Boolean))];
+function generateDynamicFilters(){
+  const hosts=[...new Set(DATA.map(d=>d["Host/Solver"]).filter(Boolean))];
+  const setters=[...new Set(DATA.map(d=>d["Setter"]).filter(Boolean))];
 
-  const setters = [...new Set(DATA.map(d=>d["Setter"]).filter(Boolean))];
-
-  const constraintCounts = {};
+  const constraintCounts={};
   DATA.forEach(d=>{
-    (d["Puzzle Sub-Type / Constraints"] || "")
-      .split(";")
-      .map(s=>s.trim())
-      .filter(Boolean)
-      .forEach(c=>{
-        constraintCounts[c] = (constraintCounts[c]||0)+1;
-      });
+    (d["Puzzle Sub-Type / Constraints"]||"")
+    .split(";").map(s=>s.trim()).filter(Boolean)
+    .forEach(c=>constraintCounts[c]=(constraintCounts[c]||0)+1);
   });
 
-  const constraints = Object.keys(constraintCounts)
+  const sortedConstraints=Object.keys(constraintCounts)
     .sort((a,b)=>constraintCounts[b]-constraintCounts[a]);
 
-  container.appendChild(createCheckboxGroup("Hosts", hosts, "hostCheckbox"));
+  const main=sortedConstraints.filter(c=>constraintCounts[c]>=100);
+  const other=sortedConstraints.filter(c=>constraintCounts[c]<100);
 
-  const setterDetails = document.createElement("details");
-  setterDetails.innerHTML = "<summary>Setters</summary>";
-  setterDetails.appendChild(createCheckboxGroup("", setters, "setterCheckbox"));
-  container.appendChild(setterDetails);
+  const constraintDiv=document.getElementById("constraintSection");
 
-  const constraintDetails = document.createElement("details");
-  constraintDetails.open = true;
-  constraintDetails.innerHTML = "<summary>Constraints</summary>";
-  constraintDetails.appendChild(createCheckboxGroup("", constraints, "constraintCheckbox", constraintCounts));
-  container.appendChild(constraintDetails);
-}
-
-function createCheckboxGroup(title, items, className, counts=null) {
-  const div = document.createElement("div");
-  if(title){
-    const label = document.createElement("div");
-    label.textContent = title;
-    label.style.marginBottom = "5px";
-    div.appendChild(label);
-  }
-
-  items.forEach(item => {
-    const l = document.createElement("label");
-    const countText = counts ? ` (${counts[item]})` : "";
-    l.innerHTML = `<input type="checkbox" value="${item}" class="${className}"> ${item}${countText}`;
-    div.appendChild(l);
+  const mainGroup=document.createElement("div");
+  mainGroup.className="checkbox-group";
+  main.forEach(c=>{
+    mainGroup.innerHTML+=
+    `<label><input type="checkbox" class="constraintCheckbox" value="${c}"> ${c} (${constraintCounts[c]})</label>`;
   });
 
-  return div;
+  const moreDetails=document.createElement("details");
+  moreDetails.innerHTML="<summary>More</summary>";
+
+  const moreGroup=document.createElement("div");
+  moreGroup.className="checkbox-group";
+
+  moreGroup.innerHTML+=`
+  <div style="margin-bottom:6px;">
+  <select id="constraintMode">
+    <option value="OR">OR</option>
+    <option value="AND">AND</option>
+  </select>
+  </div>`;
+
+  other.forEach(c=>{
+    moreGroup.innerHTML+=
+    `<label><input type="checkbox" class="constraintCheckbox" value="${c}"> ${c} (${constraintCounts[c]})</label>`;
+  });
+
+  moreDetails.appendChild(moreGroup);
+
+  constraintDiv.appendChild(mainGroup);
+  constraintDiv.appendChild(moreDetails);
+
+  document.getElementById("hostSection").innerHTML=
+    hosts.sort().map(h=>`<label><input type="checkbox" class="hostCheckbox" value="${h}"> ${h}</label>`).join("");
+
+  document.getElementById("setterSection").innerHTML=
+    setters.sort().map(s=>`<label><input type="checkbox" class="setterCheckbox" value="${s}"> ${s}</label>`).join("");
 }
 
-function applyFilters() {
-  currentPage = 1;
+function applyFilters(){
+  currentPage=1;
 
-  const search = document.getElementById("search").value.toLowerCase();
-  const minLen = Number(document.getElementById("minLength").value) * 60;
-  const maxLen = Number(document.getElementById("maxLength").value) * 60;
-  const minDate = document.getElementById("minDate").value ? new Date(document.getElementById("minDate").value) : null;
-  const maxDate = document.getElementById("maxDate").value ? new Date(document.getElementById("maxDate").value) : null;
-  const constraintMode = document.getElementById("constraintMode").value;
-  const statusFilter = document.getElementById("statusFilter").value;
-  const solvedMap = getSolvedMap();
+  const search=document.getElementById("search").value.toLowerCase();
+  const minLen=Number(document.getElementById("minLength").value)*60;
+  const maxLen=Number(document.getElementById("maxLength").value)*60;
+  const minDate=document.getElementById("minDate").value?new Date(document.getElementById("minDate").value):null;
+  const maxDate=document.getElementById("maxDate").value?new Date(document.getElementById("maxDate").value):null;
+  const status=document.getElementById("statusFilter").value;
+  const constraintMode=document.getElementById("constraintMode")?.value||"OR";
+  const solvedMap=getSolvedMap();
 
-  const selectedHosts = Array.from(document.querySelectorAll(".hostCheckbox:checked")).map(cb=>cb.value);
-  const selectedSetters = Array.from(document.querySelectorAll(".setterCheckbox:checked")).map(cb=>cb.value);
-  const selectedConstraints = Array.from(document.querySelectorAll(".constraintCheckbox:checked")).map(cb=>cb.value);
+  const selectedHosts=[...document.querySelectorAll(".hostCheckbox:checked")].map(cb=>cb.value);
+  const selectedSetters=[...document.querySelectorAll(".setterCheckbox:checked")].map(cb=>cb.value);
+  const selectedConstraints=[...document.querySelectorAll(".constraintCheckbox:checked")].map(cb=>cb.value);
 
-  filteredData = DATA.filter(item => {
+  filteredData=DATA.filter(item=>{
+    if(!(item["Video Title"]?.toLowerCase().includes(search) ||
+         item["Puzzle Title"]?.toLowerCase().includes(search))) return false;
 
-    if (!(item["Video Title"]?.toLowerCase().includes(search) ||
-          item["Puzzle Title"]?.toLowerCase().includes(search)))
-      return false;
+    if(selectedHosts.length && !selectedHosts.includes(item["Host/Solver"])) return false;
+    if(selectedSetters.length && !selectedSetters.includes(item["Setter"])) return false;
 
-    if (selectedHosts.length && !selectedHosts.includes(item["Host/Solver"])) return false;
-    if (selectedSetters.length && !selectedSetters.includes(item["Setter"])) return false;
+    const len=parseLength(item.Length||"0:00:00");
+    if(len<minLen||len>maxLen) return false;
 
-    const len = parseLength(item.Length || "0:00:00");
-    if (minLen && len < minLen) return false;
-    if (maxLen && len > maxLen) return false;
+    const date=parseDate(item.Date||"01-Jan-2000");
+    if(minDate && date<minDate) return false;
+    if(maxDate && date>maxDate) return false;
 
-    const date = parseDate(item.Date || "01-Jan-2000");
-    if (minDate && date < minDate) return false;
-    if (maxDate && date > maxDate) return false;
+    const isSolved=solvedMap[item["Video Title"]];
+    if(status==="solved"&&!isSolved) return false;
+    if(status==="unsolved"&&isSolved) return false;
 
-    const isSolved = solvedMap[item["Video Title"]];
-    if (statusFilter === "solved" && !isSolved) return false;
-    if (statusFilter === "unsolved" && isSolved) return false;
-
-    if (selectedConstraints.length) {
-      const itemConstraints = (item["Puzzle Sub-Type / Constraints"] || "")
-        .split(";")
-        .map(s=>s.trim());
-
-      if (constraintMode === "OR") {
-        if (!selectedConstraints.some(c=>itemConstraints.includes(c))) return false;
-      } else {
-        if (!selectedConstraints.every(c=>itemConstraints.includes(c))) return false;
+    if(selectedConstraints.length){
+      const itemC=(item["Puzzle Sub-Type / Constraints"]||"").split(";").map(s=>s.trim());
+      if(constraintMode==="OR"){
+        if(!selectedConstraints.some(c=>itemC.includes(c))) return false;
+      }else{
+        if(!selectedConstraints.every(c=>itemC.includes(c))) return false;
       }
     }
 
@@ -339,72 +347,64 @@ function applyFilters() {
   });
 
   filteredData.sort((a,b)=>parseDate(b.Date)-parseDate(a.Date));
-
   renderPage();
 }
 
-function renderPage() {
-  const tbody = document.getElementById("tableBody");
-  tbody.innerHTML = "";
+function renderPage(){
+  const tbody=document.getElementById("tableBody");
+  tbody.innerHTML="";
+  const start=(currentPage-1)*rowsPerPage;
+  const end=start+rowsPerPage;
 
-  const start = (currentPage-1)*rowsPerPage;
-  const end = start+rowsPerPage;
-  const pageItems = filteredData.slice(start,end);
+  const solvedMap=getSolvedMap();
 
-  document.getElementById("counter").textContent =
-    `Showing ${filteredData.length} of ${DATA.length} sudoku`;
-
-  document.getElementById("pageInfo").textContent =
-    `Page ${currentPage} of ${Math.ceil(filteredData.length/rowsPerPage)}`;
-
-  document.getElementById("prevPage").disabled = currentPage===1;
-  document.getElementById("nextPage").disabled = end>=filteredData.length;
-
-  const solvedMap = getSolvedMap();
-
-  pageItems.forEach(item=>{
-    const tr = document.createElement("tr");
-
-    tr.onclick = (e)=>{
-      if (e.target.type !== "checkbox")
-        window.open(item["Link YT"], "_blank");
+  filteredData.slice(start,end).forEach(item=>{
+    const tr=document.createElement("tr");
+    tr.onclick=(e)=>{
+      if(e.target.type!=="checkbox")
+        window.open(item["Link YT"],"_blank");
     };
 
-    const isSolved = solvedMap[item["Video Title"]] || false;
+    const isSolved=solvedMap[item["Video Title"]]||false;
 
-    tr.innerHTML = `
-      <td>${item.Date}</td>
-      <td>${item["Video Title"]}</td>
-      <td>${item["Host/Solver"]}</td>
-      <td>${item["Setter"]}</td>
-      <td>${item.Length}</td>
-      <td>${(item["Puzzle Sub-Type / Constraints"]||"")
-          .split(";")
-          .map(c=>`<span class="badge">${c.trim()}</span>`)
-          .join("")}
-      </td>
-      <td><input type="checkbox" ${isSolved?"checked":""}></td>
+    tr.innerHTML=`
+    <td>${item.Date}</td>
+    <td>${item["Video Title"]}</td>
+    <td>${item["Host/Solver"]}</td>
+    <td>${item["Setter"]}</td>
+    <td>${item.Length}</td>
+    <td>${(item["Puzzle Sub-Type / Constraints"]||"").split(";").map(c=>`<span class="badge">${c.trim()}</span>`).join("")}</td>
+    <td><input type="checkbox" ${isSolved?"checked":""}></td>
     `;
 
-    tr.querySelector("input").addEventListener("click",(e)=>{
+    tr.querySelector("input").addEventListener("click",e=>{
       e.stopPropagation();
-      const map = getSolvedMap();
-      map[item["Video Title"]] = e.target.checked;
+      const map=getSolvedMap();
+      map[item["Video Title"]]=e.target.checked;
       saveSolvedMap(map);
     });
 
     tbody.appendChild(tr);
   });
+
+  document.getElementById("counter").textContent=
+    `Showing ${filteredData.length} of ${DATA.length} sudoku`;
+
+  document.getElementById("pageInfo").textContent=
+    `Page ${currentPage} of ${Math.ceil(filteredData.length/rowsPerPage)}`;
+
+  document.getElementById("prevPage").disabled=currentPage===1;
+  document.getElementById("nextPage").disabled=end>=filteredData.length;
 }
 
-document.addEventListener("input", applyFilters);
+document.addEventListener("input",applyFilters);
 
-document.getElementById("prevPage").onclick = ()=>{
+document.getElementById("prevPage").onclick=()=>{
   currentPage--;
   renderPage();
 };
 
-document.getElementById("nextPage").onclick = ()=>{
+document.getElementById("nextPage").onclick=()=>{
   currentPage++;
   renderPage();
 };
