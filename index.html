@@ -4,26 +4,20 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sudoku Catalogue</title>
-
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
 <style>
-:root {
+:root{
   --bg:#121417;
   --panel:#1b1f24;
   --accent:#3ea6ff;
+  --accent-soft:#2b7fd1;
   --text:#e6e6e6;
   --muted:#9aa4ad;
   --border:#2a2f36;
 }
 
-body{
-  margin:0;
-  font-family:system-ui, sans-serif;
-  background:var(--bg);
-  color:var(--text);
-}
-
+body{margin:0;font-family:system-ui;background:var(--bg);color:var(--text);}
 .container{padding:16px;}
 
 .filters{
@@ -39,7 +33,7 @@ body{
   flex-wrap:wrap;
   gap:8px;
   align-items:center;
-  margin-bottom:8px;
+  margin-bottom:10px;
 }
 
 .filter-row input,
@@ -55,6 +49,11 @@ body{
 .filter-row label{
   font-size:0.8rem;
   color:var(--muted);
+}
+
+.reset-btn{
+  background:var(--accent-soft);
+  color:white;
 }
 
 details summary{
@@ -90,12 +89,25 @@ th,td{
   border-bottom:1px solid var(--border);
 }
 
-tr:hover{background:#1e242b;}
+th{
+  cursor:pointer;
+}
+
+tr:hover{
+  background:#1e242b;
+}
+
+.title-link{
+  cursor:pointer;
+}
+
+.title-link:hover{
+  text-decoration:underline;
+}
 
 .pagination{
   margin-top:12px;
   display:flex;
-  align-items:center;
   gap:8px;
   flex-wrap:wrap;
 }
@@ -109,7 +121,9 @@ button{
   font-size:0.8rem;
 }
 
-button:disabled{opacity:0.4;}
+button:disabled{
+  opacity:0.4;
+}
 
 .counter{
   font-size:0.8rem;
@@ -119,7 +133,7 @@ button:disabled{opacity:0.4;}
 
 @media(max-width:768px){
   table{font-size:0.75rem;}
-  .filter-row{flex-direction:column; align-items:flex-start;}
+  .filter-row{flex-direction:column;align-items:flex-start;}
 }
 </style>
 </head>
@@ -130,18 +144,18 @@ button:disabled{opacity:0.4;}
 
 <div class="filter-row">
 <label>Title</label>
-<input type="text" id="search" style="flex:1; min-width:160px">
+<input type="text" id="search" style="width:33%;min-width:140px;">
 
-<label>Min (min)</label>
-<input type="number" id="minLength" style="width:70px">
+<label>Min</label>
+<input type="number" id="minLength" style="width:70px;">
 
-<label>Max (min)</label>
-<input type="number" id="maxLength" style="width:70px">
+<label>Max</label>
+<input type="number" id="maxLength" style="width:70px;">
 
-<label>Newer than</label>
+<label>Newer</label>
 <input type="date" id="minDate">
 
-<label>Older than</label>
+<label>Older</label>
 <input type="date" id="maxDate">
 
 <select id="statusFilter">
@@ -149,7 +163,25 @@ button:disabled{opacity:0.4;}
 <option value="solved">Solved</option>
 <option value="unsolved">Unsolved</option>
 </select>
+
+<button id="resetBtn" class="reset-btn">Reset</button>
 </div>
+
+<details>
+<summary>About this project</summary>
+<p>
+Hi, I’m Fronema. I created this small independent fan project to make it easier to browse and orient within the large archive of <em>Cracking The Cryptic</em> Sudoku videos. I plan to continue developing and refining this site over time, so things may change as it evolves.
+</p>
+<p>
+All puzzles, videos and related intellectual property belong to Cracking The Cryptic and the respective puzzle setters. This site does not host or reproduce any original content — it only links to publicly available material and is not affiliated with or endorsed by Cracking The Cryptic.
+</p>
+<p>
+Huge admiration and thanks to Cracking The Cryptic, and to bakpao and Vebby for the public
+<a href="https://docs.google.com/spreadsheets/d/1rVqAjm-l_Urjd3TNmIc3SmTmz_OlgSoBuhY7RPgiuRg/edit?gid=59480495#gid=59480495" target="_blank">Cracking the Cryptic Catalogue</a>
+spreadsheet that made this possible.
+Feedback is welcome at <a href="mailto:fronema@gmail.com">fronema@gmail.com</a>.
+</p>
+</details>
 
 <div id="constraintSection"></div>
 
@@ -172,13 +204,13 @@ button:disabled{opacity:0.4;}
 <table>
 <thead>
 <tr>
-<th>Date</th>
-<th>Title</th>
-<th>Host</th>
-<th>Setter</th>
-<th>Length</th>
+<th data-sort="solved">Solved</th>
+<th data-sort="date">Date</th>
+<th data-sort="title">Title</th>
+<th data-sort="length">Length</th>
 <th>Constraints</th>
-<th>Solved</th>
+<th data-sort="host">Host</th>
+<th data-sort="setter">Setter</th>
 </tr>
 </thead>
 <tbody id="tableBody"></tbody>
@@ -194,14 +226,30 @@ button:disabled{opacity:0.4;}
 
 <script>
 
+/* =========================
+   STATE
+========================= */
+
+const STATE={
+  data:[],
+  filtered:[],
+  page:1,
+  sort:{key:"date",dir:"desc"},
+  rowsPerPage:50,
+  minDateDefault:null,
+  maxDateDefault:null
+};
+
+/* =========================
+   DATA LAYER
+========================= */
+
 const CSV_URL="https://docs.google.com/spreadsheets/d/1rVqAjm-l_Urjd3TNmIc3SmTmz_OlgSoBuhY7RPgiuRg/export?format=csv&gid=725349095";
-
-let DATA=[];
-let filteredData=[];
-let currentPage=1;
-const rowsPerPage=50;
-
 const months={Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
+
+function splitNames(str){
+  return (str||"").split(";").map(s=>s.trim()).filter(Boolean);
+}
 
 function parseLength(str){
   const p=str.split(":").map(Number);
@@ -213,6 +261,58 @@ function parseDate(str){
   return new Date(y,months[m],d);
 }
 
+async function loadData(){
+  const res=await fetch(CSV_URL);
+  const text=await res.text();
+  const cleaned=text.split("\n").slice(1).join("\n");
+  const parsed=Papa.parse(cleaned,{header:true,skipEmptyLines:true});
+
+  STATE.data=parsed.data
+    .filter(r=>(r["Video Type"]||"").trim().toLowerCase()==="sudoku")
+    .map(r=>{
+      return{
+        title:r["Video Title"],
+        puzzleTitle:r["Puzzle Title"],
+        dateStr:r.Date,
+        dateObj:parseDate(r.Date),
+        lengthStr:r.Length,
+        lengthSec:parseLength(r.Length||"0:00:00"),
+        hosts:splitNames(r["Host/Solver"]),
+        setters:splitNames(r["Setter"]),
+        constraints:splitNames(r["Puzzle Sub-Type / Constraints"]),
+        link:r["Link YT"]
+      };
+    });
+
+  initDefaults();
+  generateNameFilters();
+  applyFilters();
+}
+
+/* =========================
+   DEFAULTS
+========================= */
+
+function initDefaults(){
+  const lengths=STATE.data.map(d=>d.lengthSec/60);
+  document.getElementById("minLength").value=Math.floor(Math.min(...lengths));
+  document.getElementById("maxLength").value=Math.ceil(Math.max(...lengths));
+
+  const dates=STATE.data.map(d=>d.dateObj);
+  const minDate=new Date(Math.min(...dates));
+  const today=new Date();
+
+  STATE.minDateDefault=minDate;
+  STATE.maxDateDefault=today;
+
+  document.getElementById("minDate").value=minDate.toISOString().split("T")[0];
+  document.getElementById("maxDate").value=today.toISOString().split("T")[0];
+}
+
+/* =========================
+   FILTER ENGINE
+========================= */
+
 function getSolvedMap(){
   return JSON.parse(localStorage.getItem("solvedMap")||"{}");
 }
@@ -221,166 +321,166 @@ function saveSolvedMap(map){
   localStorage.setItem("solvedMap",JSON.stringify(map));
 }
 
-async function loadData(){
-  const res=await fetch(CSV_URL);
-  const text=await res.text();
-  const cleaned=text.split("\n").slice(1).join("\n");
-
-  const parsed=Papa.parse(cleaned,{header:true,skipEmptyLines:true});
-
-  DATA=parsed.data.filter(r=>(r["Video Type"]||"").trim().toLowerCase()==="sudoku");
-
-  initLengthDefaults();
-  generateDynamicFilters();
-  applyFilters();
-}
-
-function initLengthDefaults(){
-  const lengths=DATA.map(d=>parseLength(d.Length||"0:00:00")/60);
-  const min=Math.floor(Math.min(...lengths));
-  const max=Math.ceil(Math.max(...lengths));
-  document.getElementById("minLength").value=min;
-  document.getElementById("maxLength").value=max;
-}
-
-function generateDynamicFilters(){
-  const hosts=[...new Set(DATA.map(d=>d["Host/Solver"]).filter(Boolean))];
-  const setters=[...new Set(DATA.map(d=>d["Setter"]).filter(Boolean))];
-
-  const constraintCounts={};
-  DATA.forEach(d=>{
-    (d["Puzzle Sub-Type / Constraints"]||"")
-    .split(";").map(s=>s.trim()).filter(Boolean)
-    .forEach(c=>constraintCounts[c]=(constraintCounts[c]||0)+1);
-  });
-
-  const sortedConstraints=Object.keys(constraintCounts)
-    .sort((a,b)=>constraintCounts[b]-constraintCounts[a]);
-
-  const main=sortedConstraints.filter(c=>constraintCounts[c]>=100);
-  const other=sortedConstraints.filter(c=>constraintCounts[c]<100);
-
-  const constraintDiv=document.getElementById("constraintSection");
-
-  const mainGroup=document.createElement("div");
-  mainGroup.className="checkbox-group";
-  main.forEach(c=>{
-    mainGroup.innerHTML+=
-    `<label><input type="checkbox" class="constraintCheckbox" value="${c}"> ${c} (${constraintCounts[c]})</label>`;
-  });
-
-  const moreDetails=document.createElement("details");
-  moreDetails.innerHTML="<summary>More</summary>";
-
-  const moreGroup=document.createElement("div");
-  moreGroup.className="checkbox-group";
-
-  moreGroup.innerHTML+=`
-  <div style="margin-bottom:6px;">
-  <select id="constraintMode">
-    <option value="OR">OR</option>
-    <option value="AND">AND</option>
-  </select>
-  </div>`;
-
-  other.forEach(c=>{
-    moreGroup.innerHTML+=
-    `<label><input type="checkbox" class="constraintCheckbox" value="${c}"> ${c} (${constraintCounts[c]})</label>`;
-  });
-
-  moreDetails.appendChild(moreGroup);
-
-  constraintDiv.appendChild(mainGroup);
-  constraintDiv.appendChild(moreDetails);
-
-  document.getElementById("hostSection").innerHTML=
-    hosts.sort().map(h=>`<label><input type="checkbox" class="hostCheckbox" value="${h}"> ${h}</label>`).join("");
-
-  document.getElementById("setterSection").innerHTML=
-    setters.sort().map(s=>`<label><input type="checkbox" class="setterCheckbox" value="${s}"> ${s}</label>`).join("");
-}
-
 function applyFilters(){
-  currentPage=1;
 
   const search=document.getElementById("search").value.toLowerCase();
   const minLen=Number(document.getElementById("minLength").value)*60;
   const maxLen=Number(document.getElementById("maxLength").value)*60;
-  const minDate=document.getElementById("minDate").value?new Date(document.getElementById("minDate").value):null;
-  const maxDate=document.getElementById("maxDate").value?new Date(document.getElementById("maxDate").value):null;
+  const minDate=new Date(document.getElementById("minDate").value);
+  const maxDate=new Date(document.getElementById("maxDate").value);
   const status=document.getElementById("statusFilter").value;
   const constraintMode=document.getElementById("constraintMode")?.value||"OR";
-  const solvedMap=getSolvedMap();
 
   const selectedHosts=[...document.querySelectorAll(".hostCheckbox:checked")].map(cb=>cb.value);
   const selectedSetters=[...document.querySelectorAll(".setterCheckbox:checked")].map(cb=>cb.value);
   const selectedConstraints=[...document.querySelectorAll(".constraintCheckbox:checked")].map(cb=>cb.value);
 
-  filteredData=DATA.filter(item=>{
-    if(!(item["Video Title"]?.toLowerCase().includes(search) ||
-         item["Puzzle Title"]?.toLowerCase().includes(search))) return false;
+  const solvedMap=getSolvedMap();
 
-    if(selectedHosts.length && !selectedHosts.includes(item["Host/Solver"])) return false;
-    if(selectedSetters.length && !selectedSetters.includes(item["Setter"])) return false;
+  let base=STATE.data.filter(item=>{
 
-    const len=parseLength(item.Length||"0:00:00");
-    if(len<minLen||len>maxLen) return false;
+    if(!(item.title.toLowerCase().includes(search) ||
+         item.puzzleTitle?.toLowerCase().includes(search))) return false;
 
-    const date=parseDate(item.Date||"01-Jan-2000");
-    if(minDate && date<minDate) return false;
-    if(maxDate && date>maxDate) return false;
+    if(selectedHosts.length && !item.hosts.some(h=>selectedHosts.includes(h))) return false;
+    if(selectedSetters.length && !item.setters.some(s=>selectedSetters.includes(s))) return false;
 
-    const isSolved=solvedMap[item["Video Title"]];
+    if(item.lengthSec<minLen||item.lengthSec>maxLen) return false;
+
+    if(item.dateObj<minDate||item.dateObj>maxDate) return false;
+
+    const isSolved=solvedMap[item.title]||false;
     if(status==="solved"&&!isSolved) return false;
     if(status==="unsolved"&&isSolved) return false;
-
-    if(selectedConstraints.length){
-      const itemC=(item["Puzzle Sub-Type / Constraints"]||"").split(";").map(s=>s.trim());
-      if(constraintMode==="OR"){
-        if(!selectedConstraints.some(c=>itemC.includes(c))) return false;
-      }else{
-        if(!selectedConstraints.every(c=>itemC.includes(c))) return false;
-      }
-    }
 
     return true;
   });
 
-  filteredData.sort((a,b)=>parseDate(b.Date)-parseDate(a.Date));
-  renderPage();
+  updateConstraintCounts(base);
+
+  STATE.filtered=base.filter(item=>{
+    if(!selectedConstraints.length) return true;
+    if(constraintMode==="OR")
+      return selectedConstraints.some(c=>item.constraints.includes(c));
+    return selectedConstraints.every(c=>item.constraints.includes(c));
+  });
+
+  sortData();
+  STATE.page=1;
+  render();
 }
 
-function renderPage(){
+/* =========================
+   CONSTRAINT COUNTS
+========================= */
+
+function updateConstraintCounts(dataset){
+
+  const selected=[...document.querySelectorAll(".constraintCheckbox:checked")].map(cb=>cb.value);
+
+  const counts={};
+  dataset.forEach(d=>{
+    d.constraints.forEach(c=>counts[c]=(counts[c]||0)+1);
+  });
+
+  const sorted=Object.keys(counts).sort((a,b)=>counts[b]-counts[a]);
+  const main=sorted.filter(c=>counts[c]>=100);
+  const other=sorted.filter(c=>counts[c]<100);
+
+  const container=document.getElementById("constraintSection");
+  container.innerHTML="";
+
+  function createGroup(list){
+    const div=document.createElement("div");
+    div.className="checkbox-group";
+    list.forEach(c=>{
+      div.innerHTML+=`<label><input type="checkbox" class="constraintCheckbox" value="${c}"> ${c} (${counts[c]})</label>`;
+    });
+    return div;
+  }
+
+  container.appendChild(createGroup(main));
+
+  const more=document.createElement("details");
+  more.innerHTML="<summary>More</summary>";
+  const moreGroup=createGroup(other);
+  moreGroup.insertAdjacentHTML("afterbegin",
+    `<div><select id="constraintMode">
+      <option value="OR">OR</option>
+      <option value="AND">AND</option>
+    </select></div>`);
+  more.appendChild(moreGroup);
+  container.appendChild(more);
+
+  selected.forEach(val=>{
+    const cb=document.querySelector(`.constraintCheckbox[value="${CSS.escape(val)}"]`);
+    if(cb) cb.checked=true;
+  });
+}
+
+/* =========================
+   SORT
+========================= */
+
+function sortData(){
+  STATE.filtered.sort((a,b)=>{
+    let valA,valB;
+
+    switch(STATE.sort.key){
+      case "date": valA=a.dateObj; valB=b.dateObj; break;
+      case "length": valA=a.lengthSec; valB=b.lengthSec; break;
+      case "title": valA=a.title; valB=b.title; break;
+      case "host": valA=a.hosts.join("; "); valB=b.hosts.join("; "); break;
+      case "setter": valA=a.setters.join("; "); valB=b.setters.join("; "); break;
+      case "solved":
+        valA=getSolvedMap()[a.title]||false;
+        valB=getSolvedMap()[b.title]||false;
+        break;
+    }
+
+    if(valA<valB) return STATE.sort.dir==="asc"?-1:1;
+    if(valA>valB) return STATE.sort.dir==="asc"?1:-1;
+    return 0;
+  });
+}
+
+/* =========================
+   RENDER
+========================= */
+
+function render(){
+
   const tbody=document.getElementById("tableBody");
   tbody.innerHTML="";
-  const start=(currentPage-1)*rowsPerPage;
-  const end=start+rowsPerPage;
 
+  const start=(STATE.page-1)*STATE.rowsPerPage;
+  const end=start+STATE.rowsPerPage;
   const solvedMap=getSolvedMap();
 
-  filteredData.slice(start,end).forEach(item=>{
+  STATE.filtered.slice(start,end).forEach(item=>{
+
     const tr=document.createElement("tr");
     tr.onclick=(e)=>{
       if(e.target.type!=="checkbox")
-        window.open(item["Link YT"],"_blank");
+        window.open(item.link,"_blank");
     };
 
-    const isSolved=solvedMap[item["Video Title"]]||false;
+    const isSolved=solvedMap[item.title]||false;
 
     tr.innerHTML=`
-    <td>${item.Date}</td>
-    <td>${item["Video Title"]}</td>
-    <td>${item["Host/Solver"]}</td>
-    <td>${item["Setter"]}</td>
-    <td>${item.Length}</td>
-    <td>${(item["Puzzle Sub-Type / Constraints"]||"").split(";").map(c=>`<span class="badge">${c.trim()}</span>`).join("")}</td>
-    <td><input type="checkbox" ${isSolved?"checked":""}></td>
+      <td><input type="checkbox" ${isSolved?"checked":""}></td>
+      <td>${item.dateStr}</td>
+      <td class="title-link">${item.title}</td>
+      <td>${item.lengthStr}</td>
+      <td>${item.constraints.map(c=>`<span class="badge">${c}</span>`).join("")}</td>
+      <td>${item.hosts.join("; ")}</td>
+      <td>${item.setters.join("; ")}</td>
     `;
 
     tr.querySelector("input").addEventListener("click",e=>{
       e.stopPropagation();
       const map=getSolvedMap();
-      map[item["Video Title"]]=e.target.checked;
+      map[item.title]=e.target.checked;
       saveSolvedMap(map);
     });
 
@@ -388,25 +488,61 @@ function renderPage(){
   });
 
   document.getElementById("counter").textContent=
-    `Showing ${filteredData.length} of ${DATA.length} sudoku`;
+    `Showing ${STATE.filtered.length} of ${STATE.data.length} sudoku`;
 
   document.getElementById("pageInfo").textContent=
-    `Page ${currentPage} of ${Math.ceil(filteredData.length/rowsPerPage)}`;
+    `Page ${STATE.page} of ${Math.ceil(STATE.filtered.length/STATE.rowsPerPage)}`;
 
-  document.getElementById("prevPage").disabled=currentPage===1;
-  document.getElementById("nextPage").disabled=end>=filteredData.length;
+  document.getElementById("prevPage").disabled=STATE.page===1;
+  document.getElementById("nextPage").disabled=end>=STATE.filtered.length;
 }
+
+/* =========================
+   EVENTS
+========================= */
 
 document.addEventListener("input",applyFilters);
 
+document.querySelectorAll("th[data-sort]").forEach(th=>{
+  th.onclick=()=>{
+    const key=th.dataset.sort;
+    if(STATE.sort.key===key)
+      STATE.sort.dir=STATE.sort.dir==="asc"?"desc":"asc";
+    else{
+      STATE.sort.key=key;
+      STATE.sort.dir="asc";
+    }
+    sortData();
+    render();
+  };
+});
+
 document.getElementById("prevPage").onclick=()=>{
-  currentPage--;
-  renderPage();
+  STATE.page--; render();
 };
 
 document.getElementById("nextPage").onclick=()=>{
-  currentPage++;
-  renderPage();
+  STATE.page++; render();
+};
+
+document.getElementById("resetBtn").onclick=()=>{
+  document.getElementById("search").value="";
+  document.getElementById("minLength").value=
+    Math.floor(Math.min(...STATE.data.map(d=>d.lengthSec/60)));
+  document.getElementById("maxLength").value=
+    Math.ceil(Math.max(...STATE.data.map(d=>d.lengthSec/60)));
+  document.getElementById("minDate").value=
+    STATE.minDateDefault.toISOString().split("T")[0];
+  document.getElementById("maxDate").value=
+    STATE.maxDateDefault.toISOString().split("T")[0];
+  document.getElementById("statusFilter").value="all";
+
+  document.querySelectorAll("input[type='checkbox']").forEach(cb=>cb.checked=false);
+
+  STATE.sort={key:"date",dir:"desc"};
+  STATE.page=1;
+
+  applyFilters();
 };
 
 loadData();
