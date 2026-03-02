@@ -68,33 +68,26 @@ async function loadData(){
 
 function initDefaults(){
 
-  // Filter only valid dates
   const validDates = state.data
     .map(d => d.dateObj)
-    .filter(d => d instanceof Date && !isNaN(d.getTime()));
+    .filter(d => d && !isNaN(d.getTime()));
 
-  if(validDates.length === 0){
-    console.warn("No valid dates found.");
-    return;
+  if (validDates.length) {
+    const min = new Date(Math.min(...validDates.map(d => d.getTime())));
+    const today = new Date();
+
+    document.getElementById("minDate").value =
+      min.toISOString().slice(0,10);
+
+    document.getElementById("maxDate").value =
+      today.toISOString().slice(0,10);
   }
 
-  const minTime = Math.min(...validDates.map(d => d.getTime()));
-  const minDate = new Date(minTime);
-
-  const today = new Date();
-
-  document.getElementById("minDate").value =
-    minDate.toISOString().split("T")[0];
-
-  document.getElementById("maxDate").value =
-    today.toISOString().split("T")[0];
-
-  // Length defaults (safe version)
   const validLengths = state.data
     .map(d => d.lengthSec)
-    .filter(n => typeof n === "number" && !isNaN(n) && n > 0);
+    .filter(n => n && !isNaN(n));
 
-  if(validLengths.length > 0){
+  if (validLengths.length) {
     document.getElementById("minLength").value =
       Math.floor(Math.min(...validLengths) / 60);
 
@@ -102,7 +95,6 @@ function initDefaults(){
       Math.ceil(Math.max(...validLengths) / 60);
   }
 }
-
 /* ---------------- Filtering ---------------- */
 
 function applyFilters(){
