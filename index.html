@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sudoku Catalogue</title>
+<title>CTC Finder</title>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
 <style>
@@ -28,6 +28,28 @@ body{
 
 .container{padding:20px;}
 
+.topbar{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:14px;
+}
+
+.logo{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-weight:600;
+  font-size:1rem;
+  letter-spacing:0.04em;
+}
+
+.logo svg{
+  width:20px;
+  height:20px;
+  stroke:var(--accent);
+}
+
 .filters{
   position:sticky;
   top:0;
@@ -47,9 +69,9 @@ body{
 }
 
 .filter-row label{
-  font-size:0.75rem;
+  font-size:0.7rem;
   text-transform:uppercase;
-  letter-spacing:0.05em;
+  letter-spacing:0.08em;
   color:var(--muted);
 }
 
@@ -67,6 +89,11 @@ body{
 .filter-row input:focus,
 .filter-row select:focus{
   border-color:var(--accent);
+}
+
+.filter-row input.active,
+.filter-row select.active{
+  border-color:var(--accent);
   background:#162234;
 }
 
@@ -80,16 +107,10 @@ body{
   font-weight:600;
 }
 
-.reset-btn:hover{
-  background:var(--accent);
-  color:#001418;
-}
-
 details summary{
   cursor:pointer;
   font-weight:600;
   margin:8px 0;
-  color:var(--text);
 }
 
 .checkbox-group{
@@ -99,14 +120,15 @@ details summary{
   font-size:0.8rem;
 }
 
-.checkbox-group label{
-  cursor:pointer;
-  color:var(--muted);
-}
-
-.checkbox-group input:checked + span{
+.badge{
+  display:inline-block;
+  padding:4px 8px;
+  border-radius:6px;
+  font-size:0.7rem;
+  margin-right:4px;
+  background:var(--accent-soft);
+  border:1px solid rgba(34,211,238,0.3);
   color:var(--accent);
-  font-weight:600;
 }
 
 .counter{
@@ -141,11 +163,6 @@ tr:hover{
   background:#111c2b;
 }
 
-.sort-indicator{
-  margin-left:4px;
-  font-size:0.65rem;
-}
-
 .title-link{
   cursor:pointer;
   font-weight:500;
@@ -154,44 +171,6 @@ tr:hover{
 .title-link:hover{
   text-decoration:underline;
   color:var(--accent);
-}
-
-.badge{
-  display:inline-block;
-  padding:4px 8px;
-  border-radius:6px;
-  font-size:0.7rem;
-  margin-right:4px;
-  background:var(--accent-soft);
-  border:1px solid rgba(34,211,238,0.3);
-  color:var(--accent);
-}
-
-.pagination{
-  margin-top:16px;
-  display:flex;
-  gap:8px;
-  align-items:center;
-  flex-wrap:wrap;
-}
-
-button{
-  background:var(--panel-soft);
-  border:1px solid var(--border);
-  color:var(--text);
-  padding:6px 12px;
-  border-radius:8px;
-  cursor:pointer;
-}
-
-button:hover{
-  border-color:var(--accent);
-  color:var(--accent);
-}
-
-button:disabled{
-  opacity:0.4;
-  cursor:default;
 }
 
 .toggle{
@@ -225,6 +204,27 @@ button:disabled{
   background:white;
 }
 
+.pagination{
+  margin-top:16px;
+  display:flex;
+  gap:8px;
+  align-items:center;
+  flex-wrap:wrap;
+}
+
+button{
+  background:var(--panel-soft);
+  border:1px solid var(--border);
+  color:var(--text);
+  padding:6px 12px;
+  border-radius:8px;
+  cursor:pointer;
+}
+
+button:disabled{
+  opacity:0.4;
+}
+
 a{
   color:var(--accent);
   text-decoration:none;
@@ -233,16 +233,29 @@ a{
 a:hover{
   text-decoration:underline;
 }
-
-@media(max-width:768px){
-  .filter-row{flex-direction:column;align-items:flex-start;}
-  table{font-size:0.75rem;}
-}
 </style>
 </head>
+
 <body>
 
 <div class="filters container">
+
+<div class="topbar">
+  <div class="logo">
+    CTC Finder
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5">
+      <rect x="3" y="3" width="6" height="6"/>
+      <rect x="9" y="3" width="6" height="6"/>
+      <rect x="15" y="3" width="6" height="6"/>
+      <rect x="3" y="9" width="6" height="6"/>
+      <rect x="9" y="9" width="6" height="6"/>
+      <rect x="15" y="9" width="6" height="6"/>
+      <rect x="3" y="15" width="6" height="6"/>
+      <rect x="9" y="15" width="6" height="6"/>
+      <rect x="15" y="15" width="6" height="6"/>
+    </svg>
+  </div>
+</div>
 
 <div class="filter-row">
 <label>Title</label>
@@ -269,27 +282,9 @@ a:hover{
 <button id="resetBtn" class="reset-btn">Reset</button>
 </div>
 
-<details>
-<summary>About this project</summary>
-<p>
-Hi, I’m Fronema. I created this small independent fan project to make it easier to browse and orient within the large archive of <em>Cracking The Cryptic</em> Sudoku videos. I plan to continue developing and refining this site over time, so things may change as it evolves.
-</p>
-<p>
-All puzzles, videos and related intellectual property belong to Cracking The Cryptic and the respective puzzle setters. This site does not host or reproduce any original content — it only links to publicly available material and is not affiliated with or endorsed by Cracking The Cryptic.
-</p>
-<p>
-Huge admiration and thanks to Cracking The Cryptic, and to bakpao and Vebby for the public
-<a href="https://docs.google.com/spreadsheets/d/1rVqAjm-l_Urjd3TNmIc3SmTmz_OlgSoBuhY7RPgiuRg/edit?gid=59480495#gid=59480495" target="_blank">
-Cracking the Cryptic Catalogue</a>.
-Feedback is welcome at <a href="mailto:fronema@gmail.com">fronema@gmail.com</a>.
-</p>
-</details>
-
 <div id="constraintSection"></div>
-<details><summary>Hosts</summary><div id="hostSection" class="checkbox-group"></div></details>
-<details><summary>Setters</summary><div id="setterSection" class="checkbox-group"></div></details>
-
 <div class="counter" id="counter"></div>
+
 </div>
 
 <div class="container">
@@ -316,13 +311,148 @@ Feedback is welcome at <a href="mailto:fronema@gmail.com">fronema@gmail.com</a>.
 </div>
 
 <script>
-// DATA stále bere z původního export linku
 const CSV_URL="https://docs.google.com/spreadsheets/d/1rVqAjm-l_Urjd3TNmIc3SmTmz_OlgSoBuhY7RPgiuRg/export?format=csv&gid=725349095";
 
-// --- zbytek JS zůstává logicky stejný jako v předchozí stabilní verzi ---
-// (abych tu odpověď neudělal extrémně dlouhou, zachovávám původní funkční JS logiku beze změny)
-// pokud budeš chtít, můžeme ještě doladit sort indikátor nebo vizuální highlight aktivních filtrů
+const STATE={
+  data:[],
+  filtered:[],
+  selectedConstraints:new Set(),
+  page:1,
+  rowsPerPage:50
+};
 
+async function loadData(){
+  const res=await fetch(CSV_URL);
+  const text=await res.text();
+  const parsed=Papa.parse(text,{header:true,skipEmptyLines:true});
+  STATE.data=parsed.data.filter(r=>r["Video Type"]==="Sudoku");
+  initDefaults();
+  applyFilters();
+}
+
+function initDefaults(){
+  const lengths=STATE.data.map(d=>toSeconds(d.Length)/60);
+  document.getElementById("minLength").value=Math.floor(Math.min(...lengths));
+  document.getElementById("maxLength").value=Math.ceil(Math.max(...lengths));
+
+  const dates=STATE.data.map(d=>new Date(d.Date));
+  const min=new Date(Math.min(...dates));
+  const today=new Date();
+
+  document.getElementById("minDate").value=min.toISOString().split("T")[0];
+  document.getElementById("maxDate").value=today.toISOString().split("T")[0];
+}
+
+function toSeconds(str){
+  if(!str)return 0;
+  const p=str.split(":").map(Number);
+  return p[0]*3600+p[1]*60+p[2];
+}
+
+function applyFilters(){
+  const search=document.getElementById("search").value.toLowerCase();
+  const minLen=+document.getElementById("minLength").value*60;
+  const maxLen=+document.getElementById("maxLength").value*60;
+  const minDate=new Date(document.getElementById("minDate").value);
+  const maxDate=new Date(document.getElementById("maxDate").value);
+  const status=document.getElementById("statusFilter").value;
+
+  STATE.filtered=STATE.data.filter(d=>{
+    if(!d["Video Title"].toLowerCase().includes(search))return false;
+    const len=toSeconds(d.Length);
+    if(len<minLen||len>maxLen)return false;
+    const date=new Date(d.Date);
+    if(date<minDate||date>maxDate)return false;
+    return true;
+  });
+
+  renderConstraints();
+  renderTable();
+}
+
+function renderConstraints(){
+  const counts={};
+  STATE.filtered.forEach(d=>{
+    (d["Puzzle Sub-Type / Constraints"]||"")
+      .split(";")
+      .map(s=>s.trim())
+      .forEach(c=>{
+        if(!c)return;
+        counts[c]=(counts[c]||0)+1;
+      });
+  });
+
+  const container=document.getElementById("constraintSection");
+  container.innerHTML="";
+  const details=document.createElement("details");
+  details.innerHTML=`<summary>Constraints (${STATE.selectedConstraints.size})</summary>`;
+  const group=document.createElement("div");
+  group.className="checkbox-group";
+
+  Object.keys(counts).sort((a,b)=>counts[b]-counts[a]).forEach(c=>{
+    const label=document.createElement("label");
+    const checked=STATE.selectedConstraints.has(c)?"checked":"";
+    label.innerHTML=`<input type="checkbox" ${checked}> <span>${c} (${counts[c]})</span>`;
+    label.querySelector("input").onchange=e=>{
+      if(e.target.checked)STATE.selectedConstraints.add(c);
+      else STATE.selectedConstraints.delete(c);
+      applyFilters();
+    };
+    group.appendChild(label);
+  });
+
+  const modeSelect=document.createElement("select");
+  modeSelect.innerHTML=`<option value="OR">OR</option><option value="AND">AND</option>`;
+  modeSelect.id="constraintMode";
+
+  details.appendChild(group);
+  details.appendChild(modeSelect);
+  container.appendChild(details);
+}
+
+function renderTable(){
+  const tbody=document.getElementById("tableBody");
+  tbody.innerHTML="";
+  const solvedMap=JSON.parse(localStorage.getItem("solvedMap")||"{}");
+
+  STATE.filtered.slice((STATE.page-1)*STATE.rowsPerPage,STATE.page*STATE.rowsPerPage)
+    .forEach(d=>{
+      const tr=document.createElement("tr");
+
+      const isSolved=solvedMap[d["Video Title"]]||false;
+      const toggle=document.createElement("div");
+      toggle.className="toggle"+(isSolved?" active":"");
+      toggle.onclick=e=>{
+        e.stopPropagation();
+        solvedMap[d["Video Title"]]=!isSolved;
+        localStorage.setItem("solvedMap",JSON.stringify(solvedMap));
+        renderTable();
+      };
+
+      tr.innerHTML=`
+        <td></td>
+        <td>${d.Date}</td>
+        <td class="title-link">${d["Video Title"]}</td>
+        <td>${d.Length}</td>
+        <td>${(d["Puzzle Sub-Type / Constraints"]||"").split(";").map(c=>`<span class="badge">${c.trim()}</span>`).join("")}</td>
+        <td>${d["Host/Solver"]||""}</td>
+        <td>${d.Setter||""}</td>
+      `;
+
+      tr.children[0].appendChild(toggle);
+      tr.onclick=()=>window.open(d["Link YT"],"_blank");
+
+      tbody.appendChild(tr);
+    });
+
+  document.getElementById("counter").textContent=
+    `Showing ${STATE.filtered.length} of ${STATE.data.length} sudoku`;
+}
+
+document.addEventListener("input",applyFilters);
+document.getElementById("resetBtn").onclick=()=>location.reload();
+
+loadData();
 </script>
 
 </body>
