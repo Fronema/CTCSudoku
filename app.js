@@ -67,22 +67,40 @@ async function loadData(){
 /* ---------------- Defaults ---------------- */
 
 function initDefaults(){
-  const lengths = state.data.map(d => d.lengthSec);
-  document.getElementById("minLength").value =
-    Math.floor(Math.min(...lengths) / 60);
 
-  document.getElementById("maxLength").value =
-    Math.ceil(Math.max(...lengths) / 60);
+  // Filter only valid dates
+  const validDates = state.data
+    .map(d => d.dateObj)
+    .filter(d => d instanceof Date && !isNaN(d.getTime()));
 
-  const dates = state.data.map(d => d.dateObj.getTime());
-  const min = new Date(Math.min(...dates));
+  if(validDates.length === 0){
+    console.warn("No valid dates found.");
+    return;
+  }
+
+  const minTime = Math.min(...validDates.map(d => d.getTime()));
+  const minDate = new Date(minTime);
+
   const today = new Date();
 
   document.getElementById("minDate").value =
-    min.toISOString().split("T")[0];
+    minDate.toISOString().split("T")[0];
 
   document.getElementById("maxDate").value =
     today.toISOString().split("T")[0];
+
+  // Length defaults (safe version)
+  const validLengths = state.data
+    .map(d => d.lengthSec)
+    .filter(n => typeof n === "number" && !isNaN(n) && n > 0);
+
+  if(validLengths.length > 0){
+    document.getElementById("minLength").value =
+      Math.floor(Math.min(...validLengths) / 60);
+
+    document.getElementById("maxLength").value =
+      Math.ceil(Math.max(...validLengths) / 60);
+  }
 }
 
 /* ---------------- Filtering ---------------- */
