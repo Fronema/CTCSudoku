@@ -201,8 +201,6 @@ async function loadData() {
   const text = await res.text();
 
   const lines = text.split("\n");
-  
-  // odstraníme první prázdný řádek
   const cleaned = lines.slice(1).join("\n");
 
   const parsed = Papa.parse(cleaned, {
@@ -210,9 +208,10 @@ async function loadData() {
     skipEmptyLines: true
   });
 
-  DATA = parsed.data.filter(r => 
-    (r["Video Type"] || "").trim().toLowerCase() === "sudoku"
-  );
+  console.log("FIELDS:", parsed.meta.fields);
+  console.log("FIRST ROW:", parsed.data[0]);
+
+  DATA = parsed.data;  // ZATÍM bez filtru
 
   generateDynamicFilters();
   render();
@@ -360,4 +359,5 @@ loadData();
 </body>
 
 </html>
+
 
