@@ -1,13 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>CTC Finder</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="styles.css">
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-  <link rel="icon" href="data:,">
+<meta charset="UTF-8">
+<title>CTC Finder</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="styles.css">
+<link rel="icon" href="data:,">
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 </head>
+
 <body>
 
 <header class="topbar">
@@ -28,38 +29,48 @@
 </header>
 
 <section class="filters">
-  <div class="filter-row">
-    <input type="text" id="search" placeholder="Title">
 
-    <input type="number" id="minLength" placeholder="Min min">
-    <input type="number" id="maxLength" placeholder="Max min">
+<div class="filter-row">
+  <input type="text" id="search" placeholder="Title">
 
-    <input type="date" id="minDate">
-    <input type="date" id="maxDate">
+  <input type="number" id="minLength" placeholder="Min min">
+  <input type="number" id="maxLength" placeholder="Max min">
 
-    <select id="statusFilter">
-      <option value="all">All</option>
-      <option value="solved">Solved</option>
-      <option value="unsolved">Unsolved</option>
+  <input type="date" id="minDate">
+  <input type="date" id="maxDate">
+
+  <select id="statusFilter">
+    <option value="all">All</option>
+    <option value="solved">Solved</option>
+    <option value="unsolved">Unsolved</option>
+  </select>
+
+  <button id="resetBtn">Reset</button>
+</div>
+
+<details>
+  <summary>About</summary>
+  <p>
+  Hi, I'm Fronema and I created this little web tool to help navigate
+  Cracking the Cryptic Sudoku videos. This is a fan project for orientation only.
+  Everything belongs to Cracking the Cryptic. Huge admiration to them.
+  Data comes from the Cracking the Cryptic Catalogue spreadsheet.
+  Feedback: <a href="mailto:fronema@gmail.com">fronema@gmail.com</a>
+  </p>
+</details>
+
+<details id="constraintsContainer" open>
+  <summary>Constraints (0)</summary>
+  <div id="constraintsList" class="checkbox-group"></div>
+  <div class="constraint-footer">
+    <select id="constraintMode">
+      <option value="OR">OR</option>
+      <option value="AND">AND</option>
     </select>
-
-    <button id="resetBtn">Reset</button>
   </div>
+</details>
 
-  <details id="constraintsContainer">
-    <summary>Constraints (0)</summary>
-    <div id="constraintsList" class="checkbox-group"></div>
-    <div class="constraint-footer">
-      <select id="constraintMode">
-        <option value="OR">OR</option>
-        <option value="AND">AND</option>
-      </select>
-    </div>
-  </details>
-
-  <div id="counter" class="counter"></div>
-
-  <details id="hostsContainer">
+<details id="hostsContainer">
   <summary>Hosts</summary>
   <div id="hostsList" class="checkbox-group"></div>
 </details>
@@ -68,6 +79,9 @@
   <summary>Setters</summary>
   <div id="settersList" class="checkbox-group"></div>
 </details>
+
+<div id="counter" class="counter"></div>
+
 </section>
 
 <section class="table-container">
@@ -96,5 +110,3 @@
 <script src="app.js"></script>
 </body>
 </html>
-
-
