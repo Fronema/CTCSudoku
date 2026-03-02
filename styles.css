@@ -1,0 +1,161 @@
+:root{
+  --bg:#0e1117;
+  --panel:#161b22;
+  --panel-soft:#1c2128;
+  --border:#2a2f36;
+  --text:#e6edf3;
+  --muted:#8b949e;
+  --accent:#22d3ee;
+  --green:#22c55e;
+}
+
+body{
+  margin:0;
+  font-family:Inter,system-ui;
+  background:var(--bg);
+  color:var(--text);
+}
+
+/* Topbar */
+.topbar{
+  background:var(--panel);
+  padding:14px 20px;
+  border-bottom:1px solid var(--border);
+}
+
+.logo{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-weight:600;
+}
+
+.logo svg{
+  width:18px;
+  height:18px;
+  stroke:var(--accent);
+}
+
+/* Filters */
+.filters{
+  background:var(--panel);
+  padding:16px 20px;
+  border-bottom:1px solid var(--border);
+}
+
+.filter-row{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+}
+
+input,select,button{
+  background:var(--panel-soft);
+  border:1px solid var(--border);
+  color:var(--text);
+  padding:6px 10px;
+  border-radius:6px;
+  font-size:0.85rem;
+}
+
+input:focus,select:focus{
+  border-color:var(--accent);
+}
+
+button{
+  cursor:pointer;
+}
+
+button:hover{
+  border-color:var(--accent);
+}
+
+.checkbox-group{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px 12px;
+  margin-top:10px;
+}
+
+.counter{
+  margin-top:8px;
+  font-size:0.8rem;
+  color:var(--muted);
+}
+
+/* Table */
+.table-container{
+  padding:20px;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:0.85rem;
+}
+
+th{
+  text-align:left;
+  font-size:0.7rem;
+  text-transform:uppercase;
+  color:var(--muted);
+  padding:10px;
+}
+
+td{
+  padding:12px 10px;
+  border-bottom:1px solid var(--border);
+}
+
+tr:hover{
+  background:var(--panel-soft);
+}
+
+.badge{
+  display:inline-block;
+  padding:3px 7px;
+  border-radius:4px;
+  font-size:0.7rem;
+  background:rgba(34,211,238,0.1);
+  border:1px solid rgba(34,211,238,0.3);
+  color:var(--accent);
+  margin-right:4px;
+}
+
+/* Toggle */
+.toggle{
+  width:34px;
+  height:16px;
+  background:#2a2f36;
+  border-radius:999px;
+  position:relative;
+  cursor:pointer;
+}
+
+.toggle::after{
+  content:"";
+  position:absolute;
+  width:12px;
+  height:12px;
+  border-radius:50%;
+  background:#555;
+  top:2px;
+  left:2px;
+}
+
+.toggle.active{
+  background:var(--green);
+}
+
+.toggle.active::after{
+  left:20px;
+  background:white;
+}
+
+/* Pagination */
+.pagination{
+  margin-top:12px;
+  display:flex;
+  gap:8px;
+  align-items:center;
+}
