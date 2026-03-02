@@ -31,31 +31,56 @@
 <section class="filters">
 
 <div class="filter-row">
-  <input type="text" id="search" placeholder="Title">
 
-  <input type="number" id="minLength" placeholder="Min min">
-  <input type="number" id="maxLength" placeholder="Max min">
+  <div class="field">
+    <label for="search">Title</label>
+    <input type="text" id="search">
+  </div>
 
-  <input type="date" id="minDate">
-  <input type="date" id="maxDate">
+  <div class="field">
+    <label for="minLength">Min (min)</label>
+    <input type="number" id="minLength">
+  </div>
 
-  <select id="statusFilter">
-    <option value="all">All</option>
-    <option value="solved">Solved</option>
-    <option value="unsolved">Unsolved</option>
-  </select>
+  <div class="field">
+    <label for="maxLength">Max (min)</label>
+    <input type="number" id="maxLength">
+  </div>
+
+  <div class="field">
+    <label for="minDate">Newer than</label>
+    <input type="date" id="minDate">
+  </div>
+
+  <div class="field">
+    <label for="maxDate">Older than</label>
+    <input type="date" id="maxDate">
+  </div>
+
+  <div class="field">
+    <label for="statusFilter">Status</label>
+    <select id="statusFilter">
+      <option value="all">All</option>
+      <option value="solved">Solved</option>
+      <option value="unsolved">Unsolved</option>
+    </select>
+  </div>
 
   <button id="resetBtn">Reset</button>
+
 </div>
 
 <details>
   <summary>About</summary>
   <p>
-  Hi, I'm Fronema and I created this little web tool to help navigate
-  Cracking the Cryptic Sudoku videos. This is a fan project for orientation only.
-  Everything belongs to Cracking the Cryptic. Huge admiration to them.
-  Data comes from the Cracking the Cryptic Catalogue spreadsheet.
-  Feedback: <a href="mailto:fronema@gmail.com">fronema@gmail.com</a>
+Hi, I’m Fronema and I created this web project to help navigate the Cracking the Cryptic Sudoku videos. It’s a fan project built out of admiration and a mild obsession with Sudoku — and I plan to keep refining and improving it over time, so things may change.
+
+Huge admiration to Cracking the Cryptic for their incredible work and the puzzles they bring to life. Many thanks as well to Bakpao and Vebby for the <a href="https://docs.google.com/spreadsheets/d/1rVqAjm-l_Urjd3TNmIc3SmTmz_OlgSoBuhY7RPgiuRg/edit?gid=59480495#gid=59480495" target="_blank">Cracking the Cryptic Catalogue</a> spreadsheet that makes this possible.
+
+I don’t own any of the puzzles, videos, or related content referenced here. Everything belongs to Cracking the Cryptic and the individual puzzle setters.
+
+Feedback is welcome at <a href="mailto:fronema@gmail.com">fronema@gmail.com
+</a>.
   </p>
 </details>
 
@@ -110,3 +135,4 @@
 <script src="app.js"></script>
 </body>
 </html>
+
